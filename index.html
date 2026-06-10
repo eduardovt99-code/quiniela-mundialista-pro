@@ -34,6 +34,8 @@
             }
         }
     </script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         :root { --gold: #d4af37; --gold-light: #f0d77b; }
         * { -webkit-tap-highlight-color: transparent; }
@@ -740,9 +742,23 @@ const ROUNDS_CONFIG = [
 ];
 
 // =====================================================
-// BASE DE DATOS LOCAL (localStorage)
+// BASE DE DATOS (Firebase Firestore)
 // =====================================================
-const DB_KEY = 'qmp_db_v2';
+const firebaseConfig = {
+    apiKey: "AIzaSyCuJu947SLHreosLXKj5ksi8G9cyLvPDlI",
+    authDomain: "quiniela-mundialista-aae3f.firebaseapp.com",
+    projectId: "quiniela-mundialista-aae3f",
+    storageBucket: "quiniela-mundialista-aae3f.firebasestorage.app",
+    messagingSenderId: "940405213145",
+    appId: "1:940405213145:web:6669b25d79b759a07efbc8"
+};
+
+// Inicializar Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const dbFirestore = firebase.firestore();
+const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
 const SESSION_KEY = 'qmp_session_v2';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
@@ -769,17 +785,41 @@ function defaultDB() {
 
 let DB = null;
 
-function loadDB() {
+async function loadDB() {
     try {
-        const raw = localStorage.getItem(DB_KEY);
-        if (raw) { DB = JSON.parse(raw); return; }
-    } catch (e) { console.warn('DB corrupta, regenerando', e); }
+        const docSnap = await DB_DOC.get();
+        if (docSnap.exists) {
+            DB = docSnap.data();
+            listenDB();
+            return;
+        }
+    } catch (e) {
+        console.warn('Error cargando DB de Firestore, usando DB por defecto', e);
+    }
+    
+    // Si no existe, inicializamos la base por defecto
     DB = defaultDB();
-    saveDB();
+    await saveDB();
+    listenDB();
 }
 
-function saveDB() {
-    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+function listenDB() {
+    DB_DOC.onSnapshot((docSnap) => {
+        if (docSnap.exists) {
+            DB = docSnap.data();
+            if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
+                renderApp(); // Actualizar la UI si hay un cambio remoto
+            }
+        }
+    });
+}
+
+async function saveDB() {
+    try {
+        await DB_DOC.set(DB);
+    } catch(e) {
+        console.error("Error guardando en Firestore:", e);
+    }
 }
 
 function ensurePrediction(username) {
@@ -1468,8 +1508,14 @@ function animateValue(obj, start, end, duration) {
 // =====================================================
 // ARRANQUE
 // =====================================================
-document.addEventListener('DOMContentLoaded', () => {
-    loadDB();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Mostrar un estado de carga mientras conecta a Firebase
+    const loginCard = document.getElementById('login-step-user');
+    const originalLoginHTML = loginCard.innerHTML;
+    loginCard.innerHTML = '<div class="text-center py-10"><p class="text-brand-gold font-bold animate-pulse">Conectando a la nube...</p></div>';
+    
+    await loadDB();
+    loginCard.innerHTML = originalLoginHTML;
 
     // Enter para avanzar en login
     document.getElementById('login-username').addEventListener('keydown', e => { if (e.key === 'Enter') loginContinue(); });
