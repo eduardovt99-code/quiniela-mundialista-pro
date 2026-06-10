@@ -853,8 +853,8 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const dbFirestore = firebase.firestore();
-const DB_DOC = dbFirestore.collection('quiniela').doc('v4');
-const SESSION_KEY = 'qmp_session_v4';
+const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
+const SESSION_KEY = 'qmp_session_v2';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
 const SEED_ALLOWED = ['Eduardo', 'Prueba'];
@@ -891,6 +891,15 @@ async function loadDB() {
             if (!DB.results.groups) DB.results.groups = {};
             GROUP_MATCHES.forEach(m => {
                 if (!DB.results.groups[m.id]) DB.results.groups[m.id] = { a: null, b: null, finished: false };
+            });
+            if (!DB.results.knockout) DB.results.knockout = {};
+            ROUNDS_CONFIG.forEach(r => {
+                for (let i = 1; i <= r.matches; i++) {
+                    const kid = `ko_${r.key}_${i}`;
+                    if (!DB.results.knockout[kid]) {
+                        DB.results.knockout[kid] = { teamA: "", teamB: "", a: null, b: null, finished: false };
+                    }
+                }
             });
             
             listenDB();
