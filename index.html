@@ -660,12 +660,21 @@
                     </div>
                     <div class="switch" id="ko-switch" onclick="adminToggleKnockout()"></div>
                 </div>
-                <div class="match-card p-5">
-                    <h3 class="font-display font-bold text-base text-white mb-1">Campeón oficial</h3>
-                    <p class="text-xs text-gray-400 mb-3">Al definirlo se otorgan los +50 pts a quien acertó.</p>
+                <div class="match-card p-5 flex flex-col gap-3">
+                    <div>
+                        <h3 class="font-display font-bold text-base text-white mb-1">Campeón oficial</h3>
+                        <p class="text-xs text-gray-400">Registra al ganador del torneo (+50 pts a quien acertó). Cierra los pronósticos por separado.</p>
+                    </div>
                     <select id="admin-champion" class="team-select w-full p-3 text-sm" onchange="adminSetChampion(this.value)">
                         <option value="">— Torneo en curso —</option>
                     </select>
+                    <div class="flex items-center justify-between gap-3 pt-2 border-t border-white/5">
+                        <div class="flex-1 min-w-0">
+                            <span class="status-pill" id="champion-lock-pill"></span>
+                            <p class="text-[10px] text-gray-500 mt-1" id="champion-lock-desc"></p>
+                        </div>
+                        <button id="champion-lock-btn" class="btn-gold px-4 py-2 text-xs flex-shrink-0"></button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -875,7 +884,8 @@ function defaultDB() {
         users: {},        // username -> { passHash, createdAt }
         predictions: {},  // username -> { champion, groups, knockout }
         results,
-        knockoutUnlocked: false
+        knockoutUnlocked: false,
+        championLocked: false
     };
 }
 
@@ -903,6 +913,10 @@ async function loadDB() {
                 }
             });
             
+            if (DB.championLocked === undefined) {
+                DB.championLocked = !!DB.results.champion;
+            }
+
             listenDB();
             return;
         }
@@ -920,6 +934,9 @@ function listenDB() {
     DB_DOC.onSnapshot((docSnap) => {
         if (docSnap.exists) {
             DB = docSnap.data();
+            if (DB.championLocked === undefined) {
+                DB.championLocked = !!DB.results.champion;
+            }
             if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
                 renderApp(); // Actualizar la UI si hay un cambio remoto
             }
@@ -1199,12 +1216,14 @@ function renderPredictions() {
     championSelect.innerHTML = '<option value="">Selecciona al equipo campeón...</option>' +
         TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
     championSelect.value = pred.champion;
-    championSelect.disabled = !!DB.results.champion;
+    championSelect.disabled = !!DB.championLocked;
     const champEval = document.getElementById('champion-eval');
     if (DB.results.champion) {
         const hit = pred.champion === DB.results.champion;
         champEval.innerHTML = `<span class="real-score-badge">🏆 Campeón oficial: ${DB.results.champion}</span> ` +
             (pred.champion ? `<span class="result-badge ${hit ? 'correct-score' : 'incorrect'}">${hit ? '🎯 ¡Acertaste! +50 pts' : '✗ Sin acierto'}</span>` : '');
+    } else if (DB.championLocked) {
+        champEval.innerHTML = `<span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">🔒 Pronósticos de campeón cerrados — tu elección quedó registrada</span>`;
     } else {
         champEval.innerHTML = '';
     }
@@ -1339,6 +1358,7 @@ document.addEventListener('input', (e) => {
     if (!CURRENT_USER) return;
 
     if (t.id === 'champion-select') {
+        if (DB.championLocked) return;
         ensurePrediction(CURRENT_USER).champion = t.value;
         saveDB(); flashSaved(); updateScoreBadge(true);
         return;
@@ -1406,6 +1426,19 @@ function renderAdmin() {
     const champSel = document.getElementById('admin-champion');
     champSel.innerHTML = '<option value="">— Torneo en curso —</option>' + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
     champSel.value = DB.results.champion;
+
+    const locked = !!DB.championLocked;
+    const lockPill = document.getElementById('champion-lock-pill');
+    const lockBtn = document.getElementById('champion-lock-btn');
+    const lockDesc = document.getElementById('champion-lock-desc');
+    lockPill.className = `status-pill ${locked ? 'closed' : 'live'}`;
+    lockPill.textContent = locked ? 'Pronósticos cerrados' : 'Pronósticos abiertos';
+    lockDesc.textContent = locked
+        ? 'Los jugadores ya no pueden cambiar su campeón.'
+        : 'Los jugadores aún pueden elegir o cambiar su campeón.';
+    lockBtn.className = `${locked ? 'btn-outline' : 'btn-gold'} px-4 py-2 text-xs flex-shrink-0`;
+    lockBtn.textContent = locked ? 'Reabrir pronósticos' : 'Cerrar pronósticos';
+    lockBtn.onclick = locked ? adminUnlockChampion : adminLockChampion;
 
     // Resultados grupos — agrupar por letra
     const gc = document.getElementById('admin-groups-container');
@@ -1554,10 +1587,29 @@ function adminToggleKnockout() {
 function adminSetChampion(value) {
     DB.results.champion = value;
     saveDB();
+    renderAdmin();
     renderPredictions();
     renderLeaderboard();
     updateScoreBadge(true);
     toast(value ? `🏆 Campeón oficial registrado: ${value}. Puntos otorgados.` : 'Campeón oficial borrado.');
+}
+
+function adminLockChampion() {
+    DB.championLocked = true;
+    saveDB();
+    renderAdmin();
+    renderPredictions();
+    toast('🔒 Pronósticos de campeón cerrados. Nadie puede modificar su elección.');
+}
+
+function adminUnlockChampion() {
+    askConfirm('Reabrir pronósticos de campeón', 'Los jugadores podrán volver a cambiar su campeón. ¿Continuar?', () => {
+        DB.championLocked = false;
+        saveDB();
+        renderAdmin();
+        renderPredictions();
+        toast('🔓 Pronósticos de campeón reabiertos.');
+    });
 }
 
 function adminFinishGroup(matchId) {
