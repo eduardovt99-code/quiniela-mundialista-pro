@@ -799,6 +799,14 @@ async function loadDB() {
         const docSnap = await DB_DOC.get();
         if (docSnap.exists) {
             DB = docSnap.data();
+            
+            // Backfill results si hay nuevos partidos
+            if (!DB.results) DB.results = { champion: "", groups: {}, knockout: {} };
+            if (!DB.results.groups) DB.results.groups = {};
+            GROUP_MATCHES.forEach(m => {
+                if (!DB.results.groups[m.id]) DB.results.groups[m.id] = { a: null, b: null, finished: false };
+            });
+            
             listenDB();
             return;
         }
@@ -833,17 +841,25 @@ async function saveDB() {
 
 function ensurePrediction(username) {
     if (!DB.predictions[username]) {
-        const pred = { champion: "", groups: {}, knockout: {} };
-        GROUP_MATCHES.forEach(m => { pred.groups[m.id] = { a: "", b: "" }; });
-        ROUNDS_CONFIG.forEach(r => {
-            for (let i = 1; i <= r.matches; i++) {
-                pred.knockout[`ko_${r.key}_${i}`] = { teamA: "", teamB: "", a: "", b: "" };
-            }
-        });
-        DB.predictions[username] = pred;
-        saveDB();
+        DB.predictions[username] = { champion: "", groups: {}, knockout: {} };
     }
-    return DB.predictions[username];
+    const pred = DB.predictions[username];
+    if (!pred.groups) pred.groups = {};
+    if (!pred.knockout) pred.knockout = {};
+    
+    let modified = false;
+    GROUP_MATCHES.forEach(m => { 
+        if (!pred.groups[m.id]) { pred.groups[m.id] = { a: "", b: "" }; modified = true; }
+    });
+    ROUNDS_CONFIG.forEach(r => {
+        for (let i = 1; i <= r.matches; i++) {
+            const kid = `ko_${r.key}_${i}`;
+            if (!pred.knockout[kid]) { pred.knockout[kid] = { teamA: "", teamB: "", a: "", b: "" }; modified = true; }
+        }
+    });
+    
+    if (modified) saveDB();
+    return pred;
 }
 
 // =====================================================
