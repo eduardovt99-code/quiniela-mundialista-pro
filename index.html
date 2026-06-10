@@ -458,7 +458,8 @@
         ::-webkit-scrollbar-thumb { background: #2a3350; border-radius: 999px; }
         ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
     </style>
-</head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.1/css/flag-icons.min.css" />
+  </head>
 <body class="text-gray-200 font-sans">
 
 <!-- ============ VISTA LOGIN ============ -->
@@ -717,80 +718,114 @@
 // DATOS BASE
 // =====================================================
 const TEAMS = [
-    "Alemania", "Arabia Saudita", "Argentina", "Australia", "Bélgica", "Brasil",
-    "Camerún", "Canadá", "Corea del Sur", "Costa Rica", "Croacia", "Dinamarca",
-    "Ecuador", "España", "Estados Unidos", "Francia", "Gales", "Ghana", "Holanda",
-    "Inglaterra", "Irán", "Japón", "Marruecos", "México", "Polonia", "Portugal",
-    "Qatar", "Senegal", "Serbia", "Suiza", "Túnez", "Uruguay"
+    "Arabia Saudita", "Argelia", "Argentina", "Australia", "Austria", "Bélgica", "Brasil", "Camerún",
+    "Canadá", "Chile", "Colombia", "Corea del Sur", "Costa Rica", "Costa de Marfil", "Croacia",
+    "Dinamarca", "Ecuador", "Egipto", "Emiratos Árabes", "España", "Estados Unidos", "Francia",
+    "Honduras", "Inglaterra", "Irak", "Irán", "Italia", "Jamaica", "Japón", "Marruecos",
+    "México", "Nigeria", "Noruega", "Nueva Zelanda", "Países Bajos", "Panamá", "Perú", "Polonia",
+    "Portugal", "Qatar", "Senegal", "Serbia", "Suecia", "Suiza", "Túnez", "Uruguay", "Venezuela"
 ].sort();
 
 const GROUP_MATCHES = [
     // ── GRUPO A ──
-    { id: 'a1', group: 'A', teamA: "Qatar",   flagA: "🇶🇦", teamB: "Ecuador",  flagB: "🇪🇨" },
-    { id: 'a2', group: 'A', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda",  flagB: "🇳🇱" },
-    { id: 'a3', group: 'A', teamA: "Qatar",   flagA: "🇶🇦", teamB: "Senegal",  flagB: "🇸🇳" },
-    { id: 'a4', group: 'A', teamA: "Holanda", flagA: "🇳🇱", teamB: "Ecuador",  flagB: "🇪🇨" },
-    { id: 'a5', group: 'A', teamA: "Ecuador", flagA: "🇪🇨", teamB: "Senegal",  flagB: "🇸🇳" },
-    { id: 'a6', group: 'A', teamA: "Holanda", flagA: "🇳🇱", teamB: "Qatar",    flagB: "🇶🇦" },
+    { id: 'a1', group: 'A', teamA: "México", codeA: "mx", teamB: "Polonia", codeB: "pl" },
+    { id: 'a2', group: 'A', teamA: "Nigeria", codeA: "ng", teamB: "Irak", codeB: "iq" },
+    { id: 'a3', group: 'A', teamA: "México", codeA: "mx", teamB: "Nigeria", codeB: "ng" },
+    { id: 'a4', group: 'A', teamA: "Irak", codeA: "iq", teamB: "Polonia", codeB: "pl" },
+    { id: 'a5', group: 'A', teamA: "Irak", codeA: "iq", teamB: "México", codeB: "mx" },
+    { id: 'a6', group: 'A', teamA: "Polonia", codeA: "pl", teamB: "Nigeria", codeB: "ng" },
 
     // ── GRUPO B ──
-    { id: 'b1', group: 'B', teamA: "Inglaterra",    flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán",            flagB: "🇮🇷" },
-    { id: 'b2', group: 'B', teamA: "Estados Unidos", flagA: "🇺🇸", teamB: "Gales",           flagB: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
-    { id: 'b3', group: 'B', teamA: "Gales",          flagA: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", teamB: "Irán",            flagB: "🇮🇷" },
-    { id: 'b4', group: 'B', teamA: "Inglaterra",    flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Estados Unidos", flagB: "🇺🇸" },
-    { id: 'b5', group: 'B', teamA: "Gales",          flagA: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", teamB: "Inglaterra",    flagB: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-    { id: 'b6', group: 'B', teamA: "Irán",           flagA: "🇮🇷", teamB: "Estados Unidos", flagB: "🇺🇸" },
+    { id: 'b1', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Suiza", codeB: "ch" },
+    { id: 'b2', group: 'B', teamA: "Costa de Marfil", codeA: "ci", teamB: "Nueva Zelanda", codeB: "nz" },
+    { id: 'b3', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Costa de Marfil", codeB: "ci" },
+    { id: 'b4', group: 'B', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Suiza", codeB: "ch" },
+    { id: 'b5', group: 'B', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Canadá", codeB: "ca" },
+    { id: 'b6', group: 'B', teamA: "Suiza", codeA: "ch", teamB: "Costa de Marfil", codeB: "ci" },
 
     // ── GRUPO C ──
-    { id: 'c1', group: 'C', teamA: "Argentina",     flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
-    { id: 'c2', group: 'C', teamA: "México",        flagA: "🇲🇽", teamB: "Polonia",        flagB: "🇵🇱" },
-    { id: 'c3', group: 'C', teamA: "Polonia",       flagA: "🇵🇱", teamB: "Arabia Saudita", flagB: "🇸🇦" },
-    { id: 'c4', group: 'C', teamA: "Argentina",     flagA: "🇦🇷", teamB: "México",         flagB: "🇲🇽" },
-    { id: 'c5', group: 'C', teamA: "Polonia",       flagA: "🇵🇱", teamB: "Argentina",      flagB: "🇦🇷" },
-    { id: 'c6', group: 'C', teamA: "Arabia Saudita", flagA: "🇸🇦", teamB: "México",         flagB: "🇲🇽" },
+    { id: 'c1', group: 'C', teamA: "Estados Unidos", codeA: "us", teamB: "Alemania", codeB: "de" },
+    { id: 'c2', group: 'C', teamA: "Senegal", codeA: "sn", teamB: "Jamaica", codeB: "jm" },
+    { id: 'c3', group: 'C', teamA: "Estados Unidos", codeA: "us", teamB: "Senegal", codeB: "sn" },
+    { id: 'c4', group: 'C', teamA: "Jamaica", codeA: "jm", teamB: "Alemania", codeB: "de" },
+    { id: 'c5', group: 'C', teamA: "Jamaica", codeA: "jm", teamB: "Estados Unidos", codeB: "us" },
+    { id: 'c6', group: 'C', teamA: "Alemania", codeA: "de", teamB: "Senegal", codeB: "sn" },
 
     // ── GRUPO D ──
-    { id: 'd1', group: 'D', teamA: "Francia",    flagA: "🇫🇷", teamB: "Australia",  flagB: "🇦🇺" },
-    { id: 'd2', group: 'D', teamA: "Dinamarca",  flagA: "🇩🇰", teamB: "Túnez",      flagB: "🇹🇳" },
-    { id: 'd3', group: 'D', teamA: "Túnez",      flagA: "🇹🇳", teamB: "Australia",  flagB: "🇦🇺" },
-    { id: 'd4', group: 'D', teamA: "Francia",    flagA: "🇫🇷", teamB: "Dinamarca",  flagB: "🇩🇰" },
-    { id: 'd5', group: 'D', teamA: "Australia",  flagA: "🇦🇺", teamB: "Dinamarca",  flagB: "🇩🇰" },
-    { id: 'd6', group: 'D', teamA: "Túnez",      flagA: "🇹🇳", teamB: "Francia",    flagB: "🇫🇷" },
+    { id: 'd1', group: 'D', teamA: "Argentina", codeA: "ar", teamB: "Suecia", codeB: "se" },
+    { id: 'd2', group: 'D', teamA: "Argelia", codeA: "dz", teamB: "Honduras", codeB: "hn" },
+    { id: 'd3', group: 'D', teamA: "Argentina", codeA: "ar", teamB: "Argelia", codeB: "dz" },
+    { id: 'd4', group: 'D', teamA: "Honduras", codeA: "hn", teamB: "Suecia", codeB: "se" },
+    { id: 'd5', group: 'D', teamA: "Honduras", codeA: "hn", teamB: "Argentina", codeB: "ar" },
+    { id: 'd6', group: 'D', teamA: "Suecia", codeA: "se", teamB: "Argelia", codeB: "dz" },
 
     // ── GRUPO E ──
-    { id: 'e1', group: 'E', teamA: "España",    flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
-    { id: 'e2', group: 'E', teamA: "Alemania",  flagA: "🇩🇪", teamB: "Japón",       flagB: "🇯🇵" },
-    { id: 'e3', group: 'E', teamA: "Japón",     flagA: "🇯🇵", teamB: "Costa Rica", flagB: "🇨🇷" },
-    { id: 'e4', group: 'E', teamA: "España",    flagA: "🇪🇸", teamB: "Alemania",   flagB: "🇩🇪" },
-    { id: 'e5', group: 'E', teamA: "Japón",     flagA: "🇯🇵", teamB: "España",     flagB: "🇪🇸" },
-    { id: 'e6', group: 'E', teamA: "Costa Rica", flagA: "🇨🇷", teamB: "Alemania",   flagB: "🇩🇪" },
+    { id: 'e1', group: 'E', teamA: "Brasil", codeA: "br", teamB: "Serbia", codeB: "rs" },
+    { id: 'e2', group: 'E', teamA: "Camerún", codeA: "cm", teamB: "Emiratos Árabes", codeB: "ae" },
+    { id: 'e3', group: 'E', teamA: "Brasil", codeA: "br", teamB: "Camerún", codeB: "cm" },
+    { id: 'e4', group: 'E', teamA: "Emiratos Árabes", codeA: "ae", teamB: "Serbia", codeB: "rs" },
+    { id: 'e5', group: 'E', teamA: "Emiratos Árabes", codeA: "ae", teamB: "Brasil", codeB: "br" },
+    { id: 'e6', group: 'E', teamA: "Serbia", codeA: "rs", teamB: "Camerún", codeB: "cm" },
 
     // ── GRUPO F ──
-    { id: 'f1', group: 'F', teamA: "Bélgica",   flagA: "🇧🇪", teamB: "Canadá",   flagB: "🇨🇦" },
-    { id: 'f2', group: 'F', teamA: "Marruecos", flagA: "🇲🇦", teamB: "Croacia",  flagB: "🇭🇷" },
-    { id: 'f3', group: 'F', teamA: "Bélgica",   flagA: "🇧🇪", teamB: "Marruecos", flagB: "🇲🇦" },
-    { id: 'f4', group: 'F', teamA: "Croacia",   flagA: "🇭🇷", teamB: "Canadá",   flagB: "🇨🇦" },
-    { id: 'f5', group: 'F', teamA: "Croacia",   flagA: "🇭🇷", teamB: "Bélgica",  flagB: "🇧🇪" },
-    { id: 'f6', group: 'F', teamA: "Canadá",    flagA: "🇨🇦", teamB: "Marruecos", flagB: "🇲🇦" },
+    { id: 'f1', group: 'F', teamA: "Francia", codeA: "fr", teamB: "Dinamarca", codeB: "dk" },
+    { id: 'f2', group: 'F', teamA: "Egipto", codeA: "eg", teamB: "Panamá", codeB: "pa" },
+    { id: 'f3', group: 'F', teamA: "Francia", codeA: "fr", teamB: "Egipto", codeB: "eg" },
+    { id: 'f4', group: 'F', teamA: "Panamá", codeA: "pa", teamB: "Dinamarca", codeB: "dk" },
+    { id: 'f5', group: 'F', teamA: "Panamá", codeA: "pa", teamB: "Francia", codeB: "fr" },
+    { id: 'f6', group: 'F', teamA: "Dinamarca", codeA: "dk", teamB: "Egipto", codeB: "eg" },
 
     // ── GRUPO G ──
-    { id: 'g1', group: 'G', teamA: "Brasil",   flagA: "🇧🇷", teamB: "Serbia",   flagB: "🇷🇸" },
-    { id: 'g2', group: 'G', teamA: "Suiza",    flagA: "🇨🇭", teamB: "Camerún",  flagB: "🇨🇲" },
-    { id: 'g3', group: 'G', teamA: "Camerún",  flagA: "🇨🇲", teamB: "Serbia",   flagB: "🇷🇸" },
-    { id: 'g4', group: 'G', teamA: "Brasil",   flagA: "🇧🇷", teamB: "Suiza",    flagB: "🇨🇭" },
-    { id: 'g5', group: 'G', teamA: "Serbia",   flagA: "🇷🇸", teamB: "Suiza",    flagB: "🇨🇭" },
-    { id: 'g6', group: 'G', teamA: "Camerún",  flagA: "🇨🇲", teamB: "Brasil",   flagB: "🇧🇷" },
+    { id: 'g1', group: 'G', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Croacia", codeB: "hr" },
+    { id: 'g2', group: 'G', teamA: "Túnez", codeA: "tn", teamB: "Costa Rica", codeB: "cr" },
+    { id: 'g3', group: 'G', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Túnez", codeB: "tn" },
+    { id: 'g4', group: 'G', teamA: "Costa Rica", codeA: "cr", teamB: "Croacia", codeB: "hr" },
+    { id: 'g5', group: 'G', teamA: "Costa Rica", codeA: "cr", teamB: "Inglaterra", codeB: "gb-eng" },
+    { id: 'g6', group: 'G', teamA: "Croacia", codeA: "hr", teamB: "Túnez", codeB: "tn" },
 
     // ── GRUPO H ──
-    { id: 'h1', group: 'H', teamA: "Portugal",      flagA: "🇵🇹", teamB: "Ghana",        flagB: "🇬🇭" },
-    { id: 'h2', group: 'H', teamA: "Uruguay",       flagA: "🇺🇾", teamB: "Corea del Sur", flagB: "🇰🇷" },
-    { id: 'h3', group: 'H', teamA: "Corea del Sur", flagA: "🇰🇷", teamB: "Ghana",        flagB: "🇬🇭" },
-    { id: 'h4', group: 'H', teamA: "Portugal",      flagA: "🇵🇹", teamB: "Uruguay",      flagB: "🇺🇾" },
-    { id: 'h5', group: 'H', teamA: "Ghana",         flagA: "🇬🇭", teamB: "Uruguay",      flagB: "🇺🇾" },
-    { id: 'h6', group: 'H', teamA: "Corea del Sur", flagA: "🇰🇷", teamB: "Portugal",     flagB: "🇵🇹" }
+    { id: 'h1', group: 'H', teamA: "España", codeA: "es", teamB: "Austria", codeB: "at" },
+    { id: 'h2', group: 'H', teamA: "Marruecos", codeA: "ma", teamB: "Qatar", codeB: "qa" },
+    { id: 'h3', group: 'H', teamA: "España", codeA: "es", teamB: "Marruecos", codeB: "ma" },
+    { id: 'h4', group: 'H', teamA: "Qatar", codeA: "qa", teamB: "Austria", codeB: "at" },
+    { id: 'h5', group: 'H', teamA: "Qatar", codeA: "qa", teamB: "España", codeB: "es" },
+    { id: 'h6', group: 'H', teamA: "Austria", codeA: "at", teamB: "Marruecos", codeB: "ma" },
+
+    // ── GRUPO I ──
+    { id: 'i1', group: 'I', teamA: "Portugal", codeA: "pt", teamB: "Noruega", codeB: "no" },
+    { id: 'i2', group: 'I', teamA: "Perú", codeA: "pe", teamB: "Irán", codeB: "ir" },
+    { id: 'i3', group: 'I', teamA: "Portugal", codeA: "pt", teamB: "Perú", codeB: "pe" },
+    { id: 'i4', group: 'I', teamA: "Irán", codeA: "ir", teamB: "Noruega", codeB: "no" },
+    { id: 'i5', group: 'I', teamA: "Irán", codeA: "ir", teamB: "Portugal", codeB: "pt" },
+    { id: 'i6', group: 'I', teamA: "Noruega", codeA: "no", teamB: "Perú", codeB: "pe" },
+
+    // ── GRUPO J ──
+    { id: 'j1', group: 'J', teamA: "Italia", codeA: "it", teamB: "Uruguay", codeB: "uy" },
+    { id: 'j2', group: 'J', teamA: "Japón", codeA: "jp", teamB: "Venezuela", codeB: "ve" },
+    { id: 'j3', group: 'J', teamA: "Italia", codeA: "it", teamB: "Japón", codeB: "jp" },
+    { id: 'j4', group: 'J', teamA: "Venezuela", codeA: "ve", teamB: "Uruguay", codeB: "uy" },
+    { id: 'j5', group: 'J', teamA: "Venezuela", codeA: "ve", teamB: "Italia", codeB: "it" },
+    { id: 'j6', group: 'J', teamA: "Uruguay", codeA: "uy", teamB: "Japón", codeB: "jp" },
+
+    // ── GRUPO K ──
+    { id: 'k1', group: 'K', teamA: "Bélgica", codeA: "be", teamB: "Colombia", codeB: "co" },
+    { id: 'k2', group: 'K', teamA: "Corea del Sur", codeA: "kr", teamB: "Chile", codeB: "cl" },
+    { id: 'k3', group: 'K', teamA: "Bélgica", codeA: "be", teamB: "Corea del Sur", codeB: "kr" },
+    { id: 'k4', group: 'K', teamA: "Chile", codeA: "cl", teamB: "Colombia", codeB: "co" },
+    { id: 'k5', group: 'K', teamA: "Chile", codeA: "cl", teamB: "Bélgica", codeB: "be" },
+    { id: 'k6', group: 'K', teamA: "Colombia", codeA: "co", teamB: "Corea del Sur", codeB: "kr" },
+
+    // ── GRUPO L ──
+    { id: 'l1', group: 'L', teamA: "Países Bajos", codeA: "nl", teamB: "Ecuador", codeB: "ec" },
+    { id: 'l2', group: 'L', teamA: "Arabia Saudita", codeA: "sa", teamB: "Australia", codeB: "au" },
+    { id: 'l3', group: 'L', teamA: "Países Bajos", codeA: "nl", teamB: "Arabia Saudita", codeB: "sa" },
+    { id: 'l4', group: 'L', teamA: "Australia", codeA: "au", teamB: "Ecuador", codeB: "ec" },
+    { id: 'l5', group: 'L', teamA: "Australia", codeA: "au", teamB: "Países Bajos", codeB: "nl" },
+    { id: 'l6', group: 'L', teamA: "Ecuador", codeA: "ec", teamB: "Arabia Saudita", codeB: "sa" }
 ];
 
 const ROUNDS_CONFIG = [
+    { id: 'dieciseisavos', key: 'd16', name: '16vos de Final', matches: 16, ptsTeam: 3 },
     { id: 'octavos', key: 'o', name: 'Octavos de Final', matches: 8, ptsTeam: 5 },
     { id: 'cuartos', key: 'c', name: 'Cuartos de Final', matches: 4, ptsTeam: 10 },
     { id: 'semis',   key: 's', name: 'Semifinal', matches: 2, ptsTeam: 15 },
@@ -814,8 +849,8 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const dbFirestore = firebase.firestore();
-const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
-const SESSION_KEY = 'qmp_session_v2';
+const DB_DOC = dbFirestore.collection('quiniela').doc('v3');
+const SESSION_KEY = 'qmp_session_v3';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
 const SEED_ALLOWED = ['Eduardo', 'Prueba'];
@@ -1175,7 +1210,7 @@ function renderPredictions() {
                 <div class="match-card flex flex-col p-4 sm:p-5">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
-                            <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagA}</span>
+                            <span class="fi fi-${match.codeA} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
                             <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
                         </div>
                         <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
@@ -1184,7 +1219,7 @@ function renderPredictions() {
                             <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
                         </div>
                         <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
-                            <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagB}</span>
+                            <span class="fi fi-${match.codeB} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
                             <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${match.teamB}</span>
                         </div>
                     </div>
@@ -1349,11 +1384,11 @@ function renderAdmin() {
             <div class="match-card p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-2xl">${match.flagA}</span>
+                        <span class="fi fi-${match.codeA} text-2xl rounded-sm"></span>
                         <span class="font-display font-semibold text-sm truncate">${match.teamA}</span>
                         <span class="vs-divider">VS</span>
                         <span class="font-display font-semibold text-sm truncate">${match.teamB}</span>
-                        <span class="text-2xl">${match.flagB}</span>
+                        <span class="fi fi-${match.codeB} text-2xl rounded-sm"></span>
                     </div>
                     <span class="status-pill ${res.finished ? 'closed' : 'live'}">${res.finished ? 'Cerrado' : 'Abierto'}</span>
                 </div>
