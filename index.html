@@ -718,110 +718,114 @@
 // DATOS BASE
 // =====================================================
 const TEAMS = [
-    "Arabia Saudita", "Argelia", "Argentina", "Australia", "Austria", "Bélgica", "Brasil", "Camerún",
-    "Canadá", "Chile", "Colombia", "Corea del Sur", "Costa Rica", "Costa de Marfil", "Croacia",
-    "Dinamarca", "Ecuador", "Egipto", "Emiratos Árabes", "España", "Estados Unidos", "Francia",
-    "Honduras", "Inglaterra", "Irak", "Irán", "Italia", "Jamaica", "Japón", "Marruecos",
-    "México", "Nigeria", "Noruega", "Nueva Zelanda", "Países Bajos", "Panamá", "Perú", "Polonia",
-    "Portugal", "Qatar", "Senegal", "Serbia", "Suecia", "Suiza", "Túnez", "Uruguay", "Venezuela"
-].sort();
+    "Alemania", "Arabia Saudí", "Argelia", "Argentina", "Australia",
+    "Austria", "Bosnia y Herzegovina", "Brasil", "Bélgica", "Cabo Verde",
+    "Canadá", "Catar", "Chequia", "Colombia", "Costa de Marfil",
+    "Croacia", "Curaçao", "Ecuador", "Egipto", "Escocia",
+    "España", "Estados Unidos", "Francia", "Ghana", "Haití",
+    "Inglaterra", "Irak", "Irán", "Japón", "Jordania",
+    "Marruecos", "México", "Noruega", "Nueva Zelanda", "Panamá",
+    "Paraguay", "Países Bajos", "Portugal", "RD Congo", "República de Corea",
+    "Senegal", "Sudáfrica", "Suecia", "Suiza", "Turquía",
+    "Túnez", "Uruguay", "Uzbekistán"
+];
 
 const GROUP_MATCHES = [
     // ── GRUPO A ──
-    { id: 'a1', group: 'A', teamA: "México", codeA: "mx", teamB: "Polonia", codeB: "pl" },
-    { id: 'a2', group: 'A', teamA: "Nigeria", codeA: "ng", teamB: "Irak", codeB: "iq" },
-    { id: 'a3', group: 'A', teamA: "México", codeA: "mx", teamB: "Nigeria", codeB: "ng" },
-    { id: 'a4', group: 'A', teamA: "Irak", codeA: "iq", teamB: "Polonia", codeB: "pl" },
-    { id: 'a5', group: 'A', teamA: "Irak", codeA: "iq", teamB: "México", codeB: "mx" },
-    { id: 'a6', group: 'A', teamA: "Polonia", codeA: "pl", teamB: "Nigeria", codeB: "ng" },
+    { id: 'a1', group: 'A', teamA: "México", codeA: "mx", teamB: "Sudáfrica", codeB: "za" },
+    { id: 'a2', group: 'A', teamA: "República de Corea", codeA: "kr", teamB: "Chequia", codeB: "cz" },
+    { id: 'a3', group: 'A', teamA: "México", codeA: "mx", teamB: "República de Corea", codeB: "kr" },
+    { id: 'a4', group: 'A', teamA: "Chequia", codeA: "cz", teamB: "Sudáfrica", codeB: "za" },
+    { id: 'a5', group: 'A', teamA: "Chequia", codeA: "cz", teamB: "México", codeB: "mx" },
+    { id: 'a6', group: 'A', teamA: "Sudáfrica", codeA: "za", teamB: "República de Corea", codeB: "kr" },
 
     // ── GRUPO B ──
-    { id: 'b1', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Suiza", codeB: "ch" },
-    { id: 'b2', group: 'B', teamA: "Costa de Marfil", codeA: "ci", teamB: "Nueva Zelanda", codeB: "nz" },
-    { id: 'b3', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Costa de Marfil", codeB: "ci" },
-    { id: 'b4', group: 'B', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Suiza", codeB: "ch" },
-    { id: 'b5', group: 'B', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Canadá", codeB: "ca" },
-    { id: 'b6', group: 'B', teamA: "Suiza", codeA: "ch", teamB: "Costa de Marfil", codeB: "ci" },
+    { id: 'b1', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Bosnia y Herzegovina", codeB: "ba" },
+    { id: 'b2', group: 'B', teamA: "Catar", codeA: "qa", teamB: "Suiza", codeB: "ch" },
+    { id: 'b3', group: 'B', teamA: "Canadá", codeA: "ca", teamB: "Catar", codeB: "qa" },
+    { id: 'b4', group: 'B', teamA: "Suiza", codeA: "ch", teamB: "Bosnia y Herzegovina", codeB: "ba" },
+    { id: 'b5', group: 'B', teamA: "Suiza", codeA: "ch", teamB: "Canadá", codeB: "ca" },
+    { id: 'b6', group: 'B', teamA: "Bosnia y Herzegovina", codeA: "ba", teamB: "Catar", codeB: "qa" },
 
     // ── GRUPO C ──
-    { id: 'c1', group: 'C', teamA: "Estados Unidos", codeA: "us", teamB: "Alemania", codeB: "de" },
-    { id: 'c2', group: 'C', teamA: "Senegal", codeA: "sn", teamB: "Jamaica", codeB: "jm" },
-    { id: 'c3', group: 'C', teamA: "Estados Unidos", codeA: "us", teamB: "Senegal", codeB: "sn" },
-    { id: 'c4', group: 'C', teamA: "Jamaica", codeA: "jm", teamB: "Alemania", codeB: "de" },
-    { id: 'c5', group: 'C', teamA: "Jamaica", codeA: "jm", teamB: "Estados Unidos", codeB: "us" },
-    { id: 'c6', group: 'C', teamA: "Alemania", codeA: "de", teamB: "Senegal", codeB: "sn" },
+    { id: 'c1', group: 'C', teamA: "Brasil", codeA: "br", teamB: "Marruecos", codeB: "ma" },
+    { id: 'c2', group: 'C', teamA: "Haití", codeA: "ht", teamB: "Escocia", codeB: "gb-sct" },
+    { id: 'c3', group: 'C', teamA: "Brasil", codeA: "br", teamB: "Haití", codeB: "ht" },
+    { id: 'c4', group: 'C', teamA: "Escocia", codeA: "gb-sct", teamB: "Marruecos", codeB: "ma" },
+    { id: 'c5', group: 'C', teamA: "Escocia", codeA: "gb-sct", teamB: "Brasil", codeB: "br" },
+    { id: 'c6', group: 'C', teamA: "Marruecos", codeA: "ma", teamB: "Haití", codeB: "ht" },
 
     // ── GRUPO D ──
-    { id: 'd1', group: 'D', teamA: "Argentina", codeA: "ar", teamB: "Suecia", codeB: "se" },
-    { id: 'd2', group: 'D', teamA: "Argelia", codeA: "dz", teamB: "Honduras", codeB: "hn" },
-    { id: 'd3', group: 'D', teamA: "Argentina", codeA: "ar", teamB: "Argelia", codeB: "dz" },
-    { id: 'd4', group: 'D', teamA: "Honduras", codeA: "hn", teamB: "Suecia", codeB: "se" },
-    { id: 'd5', group: 'D', teamA: "Honduras", codeA: "hn", teamB: "Argentina", codeB: "ar" },
-    { id: 'd6', group: 'D', teamA: "Suecia", codeA: "se", teamB: "Argelia", codeB: "dz" },
+    { id: 'd1', group: 'D', teamA: "Estados Unidos", codeA: "us", teamB: "Paraguay", codeB: "py" },
+    { id: 'd2', group: 'D', teamA: "Australia", codeA: "au", teamB: "Turquía", codeB: "tr" },
+    { id: 'd3', group: 'D', teamA: "Estados Unidos", codeA: "us", teamB: "Australia", codeB: "au" },
+    { id: 'd4', group: 'D', teamA: "Turquía", codeA: "tr", teamB: "Paraguay", codeB: "py" },
+    { id: 'd5', group: 'D', teamA: "Turquía", codeA: "tr", teamB: "Estados Unidos", codeB: "us" },
+    { id: 'd6', group: 'D', teamA: "Paraguay", codeA: "py", teamB: "Australia", codeB: "au" },
 
     // ── GRUPO E ──
-    { id: 'e1', group: 'E', teamA: "Brasil", codeA: "br", teamB: "Serbia", codeB: "rs" },
-    { id: 'e2', group: 'E', teamA: "Camerún", codeA: "cm", teamB: "Emiratos Árabes", codeB: "ae" },
-    { id: 'e3', group: 'E', teamA: "Brasil", codeA: "br", teamB: "Camerún", codeB: "cm" },
-    { id: 'e4', group: 'E', teamA: "Emiratos Árabes", codeA: "ae", teamB: "Serbia", codeB: "rs" },
-    { id: 'e5', group: 'E', teamA: "Emiratos Árabes", codeA: "ae", teamB: "Brasil", codeB: "br" },
-    { id: 'e6', group: 'E', teamA: "Serbia", codeA: "rs", teamB: "Camerún", codeB: "cm" },
+    { id: 'e1', group: 'E', teamA: "Alemania", codeA: "de", teamB: "Curaçao", codeB: "cw" },
+    { id: 'e2', group: 'E', teamA: "Costa de Marfil", codeA: "ci", teamB: "Ecuador", codeB: "ec" },
+    { id: 'e3', group: 'E', teamA: "Alemania", codeA: "de", teamB: "Costa de Marfil", codeB: "ci" },
+    { id: 'e4', group: 'E', teamA: "Ecuador", codeA: "ec", teamB: "Curaçao", codeB: "cw" },
+    { id: 'e5', group: 'E', teamA: "Ecuador", codeA: "ec", teamB: "Alemania", codeB: "de" },
+    { id: 'e6', group: 'E', teamA: "Curaçao", codeA: "cw", teamB: "Costa de Marfil", codeB: "ci" },
 
     // ── GRUPO F ──
-    { id: 'f1', group: 'F', teamA: "Francia", codeA: "fr", teamB: "Dinamarca", codeB: "dk" },
-    { id: 'f2', group: 'F', teamA: "Egipto", codeA: "eg", teamB: "Panamá", codeB: "pa" },
-    { id: 'f3', group: 'F', teamA: "Francia", codeA: "fr", teamB: "Egipto", codeB: "eg" },
-    { id: 'f4', group: 'F', teamA: "Panamá", codeA: "pa", teamB: "Dinamarca", codeB: "dk" },
-    { id: 'f5', group: 'F', teamA: "Panamá", codeA: "pa", teamB: "Francia", codeB: "fr" },
-    { id: 'f6', group: 'F', teamA: "Dinamarca", codeA: "dk", teamB: "Egipto", codeB: "eg" },
+    { id: 'f1', group: 'F', teamA: "Países Bajos", codeA: "nl", teamB: "Japón", codeB: "jp" },
+    { id: 'f2', group: 'F', teamA: "Suecia", codeA: "se", teamB: "Túnez", codeB: "tn" },
+    { id: 'f3', group: 'F', teamA: "Países Bajos", codeA: "nl", teamB: "Suecia", codeB: "se" },
+    { id: 'f4', group: 'F', teamA: "Túnez", codeA: "tn", teamB: "Japón", codeB: "jp" },
+    { id: 'f5', group: 'F', teamA: "Túnez", codeA: "tn", teamB: "Países Bajos", codeB: "nl" },
+    { id: 'f6', group: 'F', teamA: "Japón", codeA: "jp", teamB: "Suecia", codeB: "se" },
 
     // ── GRUPO G ──
-    { id: 'g1', group: 'G', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Croacia", codeB: "hr" },
-    { id: 'g2', group: 'G', teamA: "Túnez", codeA: "tn", teamB: "Costa Rica", codeB: "cr" },
-    { id: 'g3', group: 'G', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Túnez", codeB: "tn" },
-    { id: 'g4', group: 'G', teamA: "Costa Rica", codeA: "cr", teamB: "Croacia", codeB: "hr" },
-    { id: 'g5', group: 'G', teamA: "Costa Rica", codeA: "cr", teamB: "Inglaterra", codeB: "gb-eng" },
-    { id: 'g6', group: 'G', teamA: "Croacia", codeA: "hr", teamB: "Túnez", codeB: "tn" },
+    { id: 'g1', group: 'G', teamA: "Bélgica", codeA: "be", teamB: "Egipto", codeB: "eg" },
+    { id: 'g2', group: 'G', teamA: "Irán", codeA: "ir", teamB: "Nueva Zelanda", codeB: "nz" },
+    { id: 'g3', group: 'G', teamA: "Bélgica", codeA: "be", teamB: "Irán", codeB: "ir" },
+    { id: 'g4', group: 'G', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Egipto", codeB: "eg" },
+    { id: 'g5', group: 'G', teamA: "Nueva Zelanda", codeA: "nz", teamB: "Bélgica", codeB: "be" },
+    { id: 'g6', group: 'G', teamA: "Egipto", codeA: "eg", teamB: "Irán", codeB: "ir" },
 
     // ── GRUPO H ──
-    { id: 'h1', group: 'H', teamA: "España", codeA: "es", teamB: "Austria", codeB: "at" },
-    { id: 'h2', group: 'H', teamA: "Marruecos", codeA: "ma", teamB: "Qatar", codeB: "qa" },
-    { id: 'h3', group: 'H', teamA: "España", codeA: "es", teamB: "Marruecos", codeB: "ma" },
-    { id: 'h4', group: 'H', teamA: "Qatar", codeA: "qa", teamB: "Austria", codeB: "at" },
-    { id: 'h5', group: 'H', teamA: "Qatar", codeA: "qa", teamB: "España", codeB: "es" },
-    { id: 'h6', group: 'H', teamA: "Austria", codeA: "at", teamB: "Marruecos", codeB: "ma" },
+    { id: 'h1', group: 'H', teamA: "España", codeA: "es", teamB: "Cabo Verde", codeB: "cv" },
+    { id: 'h2', group: 'H', teamA: "Arabia Saudí", codeA: "sa", teamB: "Uruguay", codeB: "uy" },
+    { id: 'h3', group: 'H', teamA: "España", codeA: "es", teamB: "Arabia Saudí", codeB: "sa" },
+    { id: 'h4', group: 'H', teamA: "Uruguay", codeA: "uy", teamB: "Cabo Verde", codeB: "cv" },
+    { id: 'h5', group: 'H', teamA: "Uruguay", codeA: "uy", teamB: "España", codeB: "es" },
+    { id: 'h6', group: 'H', teamA: "Cabo Verde", codeA: "cv", teamB: "Arabia Saudí", codeB: "sa" },
 
     // ── GRUPO I ──
-    { id: 'i1', group: 'I', teamA: "Portugal", codeA: "pt", teamB: "Noruega", codeB: "no" },
-    { id: 'i2', group: 'I', teamA: "Perú", codeA: "pe", teamB: "Irán", codeB: "ir" },
-    { id: 'i3', group: 'I', teamA: "Portugal", codeA: "pt", teamB: "Perú", codeB: "pe" },
-    { id: 'i4', group: 'I', teamA: "Irán", codeA: "ir", teamB: "Noruega", codeB: "no" },
-    { id: 'i5', group: 'I', teamA: "Irán", codeA: "ir", teamB: "Portugal", codeB: "pt" },
-    { id: 'i6', group: 'I', teamA: "Noruega", codeA: "no", teamB: "Perú", codeB: "pe" },
+    { id: 'i1', group: 'I', teamA: "Francia", codeA: "fr", teamB: "Senegal", codeB: "sn" },
+    { id: 'i2', group: 'I', teamA: "Irak", codeA: "iq", teamB: "Noruega", codeB: "no" },
+    { id: 'i3', group: 'I', teamA: "Francia", codeA: "fr", teamB: "Irak", codeB: "iq" },
+    { id: 'i4', group: 'I', teamA: "Noruega", codeA: "no", teamB: "Senegal", codeB: "sn" },
+    { id: 'i5', group: 'I', teamA: "Noruega", codeA: "no", teamB: "Francia", codeB: "fr" },
+    { id: 'i6', group: 'I', teamA: "Senegal", codeA: "sn", teamB: "Irak", codeB: "iq" },
 
     // ── GRUPO J ──
-    { id: 'j1', group: 'J', teamA: "Italia", codeA: "it", teamB: "Uruguay", codeB: "uy" },
-    { id: 'j2', group: 'J', teamA: "Japón", codeA: "jp", teamB: "Venezuela", codeB: "ve" },
-    { id: 'j3', group: 'J', teamA: "Italia", codeA: "it", teamB: "Japón", codeB: "jp" },
-    { id: 'j4', group: 'J', teamA: "Venezuela", codeA: "ve", teamB: "Uruguay", codeB: "uy" },
-    { id: 'j5', group: 'J', teamA: "Venezuela", codeA: "ve", teamB: "Italia", codeB: "it" },
-    { id: 'j6', group: 'J', teamA: "Uruguay", codeA: "uy", teamB: "Japón", codeB: "jp" },
+    { id: 'j1', group: 'J', teamA: "Argentina", codeA: "ar", teamB: "Argelia", codeB: "dz" },
+    { id: 'j2', group: 'J', teamA: "Austria", codeA: "at", teamB: "Jordania", codeB: "jo" },
+    { id: 'j3', group: 'J', teamA: "Argentina", codeA: "ar", teamB: "Austria", codeB: "at" },
+    { id: 'j4', group: 'J', teamA: "Jordania", codeA: "jo", teamB: "Argelia", codeB: "dz" },
+    { id: 'j5', group: 'J', teamA: "Jordania", codeA: "jo", teamB: "Argentina", codeB: "ar" },
+    { id: 'j6', group: 'J', teamA: "Argelia", codeA: "dz", teamB: "Austria", codeB: "at" },
 
     // ── GRUPO K ──
-    { id: 'k1', group: 'K', teamA: "Bélgica", codeA: "be", teamB: "Colombia", codeB: "co" },
-    { id: 'k2', group: 'K', teamA: "Corea del Sur", codeA: "kr", teamB: "Chile", codeB: "cl" },
-    { id: 'k3', group: 'K', teamA: "Bélgica", codeA: "be", teamB: "Corea del Sur", codeB: "kr" },
-    { id: 'k4', group: 'K', teamA: "Chile", codeA: "cl", teamB: "Colombia", codeB: "co" },
-    { id: 'k5', group: 'K', teamA: "Chile", codeA: "cl", teamB: "Bélgica", codeB: "be" },
-    { id: 'k6', group: 'K', teamA: "Colombia", codeA: "co", teamB: "Corea del Sur", codeB: "kr" },
+    { id: 'k1', group: 'K', teamA: "Portugal", codeA: "pt", teamB: "RD Congo", codeB: "cd" },
+    { id: 'k2', group: 'K', teamA: "Uzbekistán", codeA: "uz", teamB: "Colombia", codeB: "co" },
+    { id: 'k3', group: 'K', teamA: "Portugal", codeA: "pt", teamB: "Uzbekistán", codeB: "uz" },
+    { id: 'k4', group: 'K', teamA: "Colombia", codeA: "co", teamB: "RD Congo", codeB: "cd" },
+    { id: 'k5', group: 'K', teamA: "Colombia", codeA: "co", teamB: "Portugal", codeB: "pt" },
+    { id: 'k6', group: 'K', teamA: "RD Congo", codeA: "cd", teamB: "Uzbekistán", codeB: "uz" },
 
     // ── GRUPO L ──
-    { id: 'l1', group: 'L', teamA: "Países Bajos", codeA: "nl", teamB: "Ecuador", codeB: "ec" },
-    { id: 'l2', group: 'L', teamA: "Arabia Saudita", codeA: "sa", teamB: "Australia", codeB: "au" },
-    { id: 'l3', group: 'L', teamA: "Países Bajos", codeA: "nl", teamB: "Arabia Saudita", codeB: "sa" },
-    { id: 'l4', group: 'L', teamA: "Australia", codeA: "au", teamB: "Ecuador", codeB: "ec" },
-    { id: 'l5', group: 'L', teamA: "Australia", codeA: "au", teamB: "Países Bajos", codeB: "nl" },
-    { id: 'l6', group: 'L', teamA: "Ecuador", codeA: "ec", teamB: "Arabia Saudita", codeB: "sa" }
+    { id: 'l1', group: 'L', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Croacia", codeB: "hr" },
+    { id: 'l2', group: 'L', teamA: "Ghana", codeA: "gh", teamB: "Panamá", codeB: "pa" },
+    { id: 'l3', group: 'L', teamA: "Inglaterra", codeA: "gb-eng", teamB: "Ghana", codeB: "gh" },
+    { id: 'l4', group: 'L', teamA: "Panamá", codeA: "pa", teamB: "Croacia", codeB: "hr" },
+    { id: 'l5', group: 'L', teamA: "Panamá", codeA: "pa", teamB: "Inglaterra", codeB: "gb-eng" },
+    { id: 'l6', group: 'L', teamA: "Croacia", codeA: "hr", teamB: "Ghana", codeB: "gh" }
 ];
 
 const ROUNDS_CONFIG = [
@@ -849,8 +853,8 @@ if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 const dbFirestore = firebase.firestore();
-const DB_DOC = dbFirestore.collection('quiniela').doc('v3');
-const SESSION_KEY = 'qmp_session_v3';
+const DB_DOC = dbFirestore.collection('quiniela').doc('v4');
+const SESSION_KEY = 'qmp_session_v4';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
 const SEED_ALLOWED = ['Eduardo', 'Prueba'];
