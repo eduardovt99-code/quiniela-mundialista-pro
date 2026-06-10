@@ -725,22 +725,69 @@ const TEAMS = [
 ].sort();
 
 const GROUP_MATCHES = [
-    { id: 'g1', group: 'A', teamA: "Qatar", flagA: "🇶🇦", teamB: "Ecuador", flagB: "🇪🇨" },
-    { id: 'g2', group: 'A', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda", flagB: "🇳🇱" },
-    { id: 'g3', group: 'B', teamA: "Inglaterra", flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán", flagB: "🇮🇷" },
-    { id: 'g4', group: 'B', teamA: "Estados Unidos", flagA: "🇺🇸", teamB: "Gales", flagB: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
-    { id: 'g5', group: 'C', teamA: "Argentina", flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
-    { id: 'g6', group: 'C', teamA: "México", flagA: "🇲🇽", teamB: "Polonia", flagB: "🇵🇱" },
-    { id: 'g7', group: 'D', teamA: "Francia", flagA: "🇫🇷", teamB: "Australia", flagB: "🇦🇺" },
-    { id: 'g8', group: 'D', teamA: "Dinamarca", flagA: "🇩🇰", teamB: "Túnez", flagB: "🇹🇳" },
-    { id: 'g9', group: 'E', teamA: "España", flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
-    { id: 'g10', group: 'E', teamA: "Alemania", flagA: "🇩🇪", teamB: "Japón", flagB: "🇯🇵" },
-    { id: 'g11', group: 'F', teamA: "Bélgica", flagA: "🇧🇪", teamB: "Canadá", flagB: "🇨🇦" },
-    { id: 'g12', group: 'F', teamA: "Marruecos", flagA: "🇲🇦", teamB: "Croacia", flagB: "🇭🇷" },
-    { id: 'g13', group: 'G', teamA: "Brasil", flagA: "🇧🇷", teamB: "Serbia", flagB: "🇷🇸" },
-    { id: 'g14', group: 'G', teamA: "Suiza", flagA: "🇨🇭", teamB: "Camerún", flagB: "🇨🇲" },
-    { id: 'g15', group: 'H', teamA: "Portugal", flagA: "🇵🇹", teamB: "Ghana", flagB: "🇬🇭" },
-    { id: 'g16', group: 'H', teamA: "Uruguay", flagA: "🇺🇾", teamB: "Corea del Sur", flagB: "🇰🇷" }
+    // ── GRUPO A ──
+    { id: 'a1', group: 'A', teamA: "Qatar",   flagA: "🇶🇦", teamB: "Ecuador",  flagB: "🇪🇨" },
+    { id: 'a2', group: 'A', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda",  flagB: "🇳🇱" },
+    { id: 'a3', group: 'A', teamA: "Qatar",   flagA: "🇶🇦", teamB: "Senegal",  flagB: "🇸🇳" },
+    { id: 'a4', group: 'A', teamA: "Holanda", flagA: "🇳🇱", teamB: "Ecuador",  flagB: "🇪🇨" },
+    { id: 'a5', group: 'A', teamA: "Ecuador", flagA: "🇪🇨", teamB: "Senegal",  flagB: "🇸🇳" },
+    { id: 'a6', group: 'A', teamA: "Holanda", flagA: "🇳🇱", teamB: "Qatar",    flagB: "🇶🇦" },
+
+    // ── GRUPO B ──
+    { id: 'b1', group: 'B', teamA: "Inglaterra",    flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán",            flagB: "🇮🇷" },
+    { id: 'b2', group: 'B', teamA: "Estados Unidos", flagA: "🇺🇸", teamB: "Gales",           flagB: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+    { id: 'b3', group: 'B', teamA: "Gales",          flagA: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", teamB: "Irán",            flagB: "🇮🇷" },
+    { id: 'b4', group: 'B', teamA: "Inglaterra",    flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Estados Unidos", flagB: "🇺🇸" },
+    { id: 'b5', group: 'B', teamA: "Gales",          flagA: "🏴󠁧󠁢󠁷󠁬󠁳󠁿", teamB: "Inglaterra",    flagB: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+    { id: 'b6', group: 'B', teamA: "Irán",           flagA: "🇮🇷", teamB: "Estados Unidos", flagB: "🇺🇸" },
+
+    // ── GRUPO C ──
+    { id: 'c1', group: 'C', teamA: "Argentina",     flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
+    { id: 'c2', group: 'C', teamA: "México",        flagA: "🇲🇽", teamB: "Polonia",        flagB: "🇵🇱" },
+    { id: 'c3', group: 'C', teamA: "Polonia",       flagA: "🇵🇱", teamB: "Arabia Saudita", flagB: "🇸🇦" },
+    { id: 'c4', group: 'C', teamA: "Argentina",     flagA: "🇦🇷", teamB: "México",         flagB: "🇲🇽" },
+    { id: 'c5', group: 'C', teamA: "Polonia",       flagA: "🇵🇱", teamB: "Argentina",      flagB: "🇦🇷" },
+    { id: 'c6', group: 'C', teamA: "Arabia Saudita", flagA: "🇸🇦", teamB: "México",         flagB: "🇲🇽" },
+
+    // ── GRUPO D ──
+    { id: 'd1', group: 'D', teamA: "Francia",    flagA: "🇫🇷", teamB: "Australia",  flagB: "🇦🇺" },
+    { id: 'd2', group: 'D', teamA: "Dinamarca",  flagA: "🇩🇰", teamB: "Túnez",      flagB: "🇹🇳" },
+    { id: 'd3', group: 'D', teamA: "Túnez",      flagA: "🇹🇳", teamB: "Australia",  flagB: "🇦🇺" },
+    { id: 'd4', group: 'D', teamA: "Francia",    flagA: "🇫🇷", teamB: "Dinamarca",  flagB: "🇩🇰" },
+    { id: 'd5', group: 'D', teamA: "Australia",  flagA: "🇦🇺", teamB: "Dinamarca",  flagB: "🇩🇰" },
+    { id: 'd6', group: 'D', teamA: "Túnez",      flagA: "🇹🇳", teamB: "Francia",    flagB: "🇫🇷" },
+
+    // ── GRUPO E ──
+    { id: 'e1', group: 'E', teamA: "España",    flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
+    { id: 'e2', group: 'E', teamA: "Alemania",  flagA: "🇩🇪", teamB: "Japón",       flagB: "🇯🇵" },
+    { id: 'e3', group: 'E', teamA: "Japón",     flagA: "🇯🇵", teamB: "Costa Rica", flagB: "🇨🇷" },
+    { id: 'e4', group: 'E', teamA: "España",    flagA: "🇪🇸", teamB: "Alemania",   flagB: "🇩🇪" },
+    { id: 'e5', group: 'E', teamA: "Japón",     flagA: "🇯🇵", teamB: "España",     flagB: "🇪🇸" },
+    { id: 'e6', group: 'E', teamA: "Costa Rica", flagA: "🇨🇷", teamB: "Alemania",   flagB: "🇩🇪" },
+
+    // ── GRUPO F ──
+    { id: 'f1', group: 'F', teamA: "Bélgica",   flagA: "🇧🇪", teamB: "Canadá",   flagB: "🇨🇦" },
+    { id: 'f2', group: 'F', teamA: "Marruecos", flagA: "🇲🇦", teamB: "Croacia",  flagB: "🇭🇷" },
+    { id: 'f3', group: 'F', teamA: "Bélgica",   flagA: "🇧🇪", teamB: "Marruecos", flagB: "🇲🇦" },
+    { id: 'f4', group: 'F', teamA: "Croacia",   flagA: "🇭🇷", teamB: "Canadá",   flagB: "🇨🇦" },
+    { id: 'f5', group: 'F', teamA: "Croacia",   flagA: "🇭🇷", teamB: "Bélgica",  flagB: "🇧🇪" },
+    { id: 'f6', group: 'F', teamA: "Canadá",    flagA: "🇨🇦", teamB: "Marruecos", flagB: "🇲🇦" },
+
+    // ── GRUPO G ──
+    { id: 'g1', group: 'G', teamA: "Brasil",   flagA: "🇧🇷", teamB: "Serbia",   flagB: "🇷🇸" },
+    { id: 'g2', group: 'G', teamA: "Suiza",    flagA: "🇨🇭", teamB: "Camerún",  flagB: "🇨🇲" },
+    { id: 'g3', group: 'G', teamA: "Camerún",  flagA: "🇨🇲", teamB: "Serbia",   flagB: "🇷🇸" },
+    { id: 'g4', group: 'G', teamA: "Brasil",   flagA: "🇧🇷", teamB: "Suiza",    flagB: "🇨🇭" },
+    { id: 'g5', group: 'G', teamA: "Serbia",   flagA: "🇷🇸", teamB: "Suiza",    flagB: "🇨🇭" },
+    { id: 'g6', group: 'G', teamA: "Camerún",  flagA: "🇨🇲", teamB: "Brasil",   flagB: "🇧🇷" },
+
+    // ── GRUPO H ──
+    { id: 'h1', group: 'H', teamA: "Portugal",      flagA: "🇵🇹", teamB: "Ghana",        flagB: "🇬🇭" },
+    { id: 'h2', group: 'H', teamA: "Uruguay",       flagA: "🇺🇾", teamB: "Corea del Sur", flagB: "🇰🇷" },
+    { id: 'h3', group: 'H', teamA: "Corea del Sur", flagA: "🇰🇷", teamB: "Ghana",        flagB: "🇬🇭" },
+    { id: 'h4', group: 'H', teamA: "Portugal",      flagA: "🇵🇹", teamB: "Uruguay",      flagB: "🇺🇾" },
+    { id: 'h5', group: 'H', teamA: "Ghana",         flagA: "🇬🇭", teamB: "Uruguay",      flagB: "🇺🇾" },
+    { id: 'h6', group: 'H', teamA: "Corea del Sur", flagA: "🇰🇷", teamB: "Portugal",     flagB: "🇵🇹" }
 ];
 
 const ROUNDS_CONFIG = [
@@ -1102,43 +1149,49 @@ function renderPredictions() {
         champEval.innerHTML = '';
     }
 
-    // Grupos
+    // Grupos — agrupar por letra
     const container = document.getElementById('groups-container');
+    const groups = {};
+    GROUP_MATCHES.forEach(m => { if (!groups[m.group]) groups[m.group] = []; groups[m.group].push(m); });
+
     let html = '';
-    GROUP_MATCHES.forEach(match => {
-        const res = DB.results.groups[match.id];
-        const p = pred.groups[match.id];
-        const locked = res.finished;
-        let realScoreHTML = '', evalHTML = '';
-        if (locked) {
-            realScoreHTML = `<div class="w-full flex justify-center mt-2"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Final: ${res.a} - ${res.b}</div></div>`;
-            const pts = scoreMatch(p.a, p.b, res.a, res.b);
-            if (p.a !== "" && p.b !== "") {
-                if (pts === 5) evalHTML = `<span class="result-badge correct-score">🎯 ¡Marcador Exacto! +5 pts</span>`;
-                else if (pts === 3) evalHTML = `<span class="result-badge correct-result">✓ Resultado Correcto +3 pts</span>`;
-                else evalHTML = `<span class="result-badge incorrect">✗ Incorrecto 0 pts</span>`;
+    Object.keys(groups).sort().forEach(groupLetter => {
+        html += `<div class="lg:col-span-2"><h3 class="round-title font-display font-bold text-lg text-brand-gold/90 uppercase tracking-widest mb-4 mt-2">Grupo ${groupLetter}</h3></div>`;
+        groups[groupLetter].forEach(match => {
+            const res = DB.results.groups[match.id] || { a: null, b: null, finished: false };
+            const p = pred.groups[match.id] || { a: "", b: "" };
+            const locked = res.finished;
+            let realScoreHTML = '', evalHTML = '';
+            if (locked) {
+                realScoreHTML = `<div class="w-full flex justify-center mt-2"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Final: ${res.a} - ${res.b}</div></div>`;
+                const pts = scoreMatch(p.a, p.b, res.a, res.b);
+                if (p.a !== "" && p.b !== "") {
+                    if (pts === 5) evalHTML = `<span class="result-badge correct-score">🎯 ¡Marcador Exacto! +5 pts</span>`;
+                    else if (pts === 3) evalHTML = `<span class="result-badge correct-result">✓ Resultado Correcto +3 pts</span>`;
+                    else evalHTML = `<span class="result-badge incorrect">✗ Incorrecto 0 pts</span>`;
+                }
             }
-        }
-        html += `
-            <div class="match-card flex flex-col p-4 sm:p-5">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
-                        <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagA}</span>
-                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
+            html += `
+                <div class="match-card flex flex-col p-4 sm:p-5">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                            <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagA}</span>
+                            <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                            <input type="number" data-pred="g" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
+                            <span class="vs-divider px-0.5">VS</span>
+                            <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
+                        </div>
+                        <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                            <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagB}</span>
+                            <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${match.teamB}</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                        <input type="number" data-pred="g" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
-                        <span class="vs-divider px-0.5">VS</span>
-                        <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
-                    </div>
-                    <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
-                        <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagB}</span>
-                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${match.teamB}</span>
-                    </div>
-                </div>
-                ${realScoreHTML}
-                <div class="text-center w-full">${evalHTML}</div>
-            </div>`;
+                    ${realScoreHTML}
+                    <div class="text-center w-full">${evalHTML}</div>
+                </div>`;
+        });
     });
     container.innerHTML = html;
 
@@ -1282,34 +1335,42 @@ function renderAdmin() {
     champSel.innerHTML = '<option value="">— Torneo en curso —</option>' + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
     champSel.value = DB.results.champion;
 
-    // Resultados grupos
+    // Resultados grupos — agrupar por letra
     const gc = document.getElementById('admin-groups-container');
-    gc.innerHTML = GROUP_MATCHES.map(match => {
-        const res = DB.results.groups[match.id];
-        return `
-        <div class="match-card p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-2xl">${match.flagA}</span>
-                    <span class="font-display font-semibold text-sm truncate">${match.teamA}</span>
-                    <span class="vs-divider">VS</span>
-                    <span class="font-display font-semibold text-sm truncate">${match.teamB}</span>
-                    <span class="text-2xl">${match.flagB}</span>
+    const adminGroups = {};
+    GROUP_MATCHES.forEach(m => { if (!adminGroups[m.group]) adminGroups[m.group] = []; adminGroups[m.group].push(m); });
+    
+    let adminHTML = '';
+    Object.keys(adminGroups).sort().forEach(groupLetter => {
+        adminHTML += `<div class="lg:col-span-2"><h3 class="round-title font-display font-bold text-lg text-brand-gold/90 uppercase tracking-widest mb-4 mt-2">Grupo ${groupLetter}</h3></div>`;
+        adminGroups[groupLetter].forEach(match => {
+            const res = DB.results.groups[match.id] || { a: null, b: null, finished: false };
+            adminHTML += `
+            <div class="match-card p-4 sm:p-5">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-2xl">${match.flagA}</span>
+                        <span class="font-display font-semibold text-sm truncate">${match.teamA}</span>
+                        <span class="vs-divider">VS</span>
+                        <span class="font-display font-semibold text-sm truncate">${match.teamB}</span>
+                        <span class="text-2xl">${match.flagB}</span>
+                    </div>
+                    <span class="status-pill ${res.finished ? 'closed' : 'live'}">${res.finished ? 'Cerrado' : 'Abierto'}</span>
                 </div>
-                <span class="status-pill ${res.finished ? 'closed' : 'live'}">${res.finished ? 'Cerrado' : 'Abierto'}</span>
-            </div>
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <input type="number" data-res="g" data-match="${match.id}" data-side="a" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.a ?? ''}" ${res.finished ? 'disabled' : ''}/>
-                    <span class="text-gray-600 font-bold">:</span>
-                    <input type="number" data-res="g" data-match="${match.id}" data-side="b" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.b ?? ''}" ${res.finished ? 'disabled' : ''}/>
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <input type="number" data-res="g" data-match="${match.id}" data-side="a" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.a ?? ''}" ${res.finished ? 'disabled' : ''}/>
+                        <span class="text-gray-600 font-bold">:</span>
+                        <input type="number" data-res="g" data-match="${match.id}" data-side="b" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.b ?? ''}" ${res.finished ? 'disabled' : ''}/>
+                    </div>
+                    ${res.finished
+                        ? `<button onclick="adminReopenGroup('${match.id}')" class="btn-outline px-4 py-2 text-xs">Reabrir</button>`
+                        : `<button onclick="adminFinishGroup('${match.id}')" class="btn-gold px-4 py-2 text-xs">Cerrar partido ✓</button>`}
                 </div>
-                ${res.finished
-                    ? `<button onclick="adminReopenGroup('${match.id}')" class="btn-outline px-4 py-2 text-xs">Reabrir</button>`
-                    : `<button onclick="adminFinishGroup('${match.id}')" class="btn-gold px-4 py-2 text-xs">Cerrar partido ✓</button>`}
-            </div>
-        </div>`;
-    }).join('');
+            </div>`;
+        });
+    });
+    gc.innerHTML = adminHTML;
 
     // Resultados eliminatorias
     const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
