@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiniela Mundialista Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0a0e1a',
+                            navy: '#101627',
+                            card: '#151c30',
+                            gold: '#d4af37',
+                            goldLight: '#f0d77b',
+                            goldDark: '#b5952f',
+                            accent: '#8a1538',
+                            accentLight: '#9e1b42',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'gold': '0 0 25px rgba(212, 175, 55, 0.35)',
+                        'gold-sm': '0 0 12px rgba(212, 175, 55, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --gold: #d4af37; --gold-light: #f0d77b; }
+        * { -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: #0a0e1a;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 175, 55, 0.08), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 30%, rgba(138, 21, 56, 0.10), transparent),
+                radial-gradient(ellipse 60% 40% at 0% 70%, rgba(16, 185, 129, 0.05), transparent);
+            background-attachment: fixed;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 22px 22px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .gold-text {
+            background: linear-gradient(120deg, #f0d77b 0%, #d4af37 45%, #fff3c4 70%, #b5952f 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .glass-card {
+            background: linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 5px; height: 100%;
+            background: linear-gradient(to bottom, #f0d77b, #d4af37 40%, #8a1538);
+            z-index: 1;
+        }
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(to right, transparent, rgba(212,175,55,0.5), transparent);
+        }
+
+        .section-icon {
+            width: 3.5rem; height: 3.5rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 1rem;
+            background: linear-gradient(145deg, rgba(212,175,55,0.18), rgba(212,175,55,0.05));
+            border: 1px solid rgba(212,175,55,0.35);
+            color: var(--gold);
+            flex-shrink: 0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .match-card {
+            background: linear-gradient(160deg, rgba(255,255,255,0.045), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem;
+            transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+        }
+        .match-card:hover {
+            border-color: rgba(212,175,55,0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px -10px rgba(0,0,0,0.6), 0 0 15px rgba(212,175,55,0.07);
+        }
+
+        .score-input {
+            width: 3.25rem;
+            height: 3.25rem;
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 0.75rem;
+            background-color: rgba(10, 14, 26, 0.7);
+            color: #f0d77b;
+            transition: all 0.2s;
+        }
+        .score-input::placeholder { color: rgba(255,255,255,0.2); font-weight: 600; }
+        .score-input:hover:not(:disabled) { border-color: rgba(212,175,55,0.4); }
+        .score-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2), 0 0 15px rgba(212,175,55,0.15);
+            background-color: rgba(10, 14, 26, 0.9);
+        }
+        .score-input:disabled {
+            background-color: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.45);
+            border-color: rgba(255,255,255,0.07);
+            cursor: not-allowed;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        .team-select, .text-input {
+            background-color: rgba(10, 14, 26, 0.7);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 0.75rem;
+            color: #e8ecf5;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .team-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23d4af37'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+            padding-right: 2.25rem;
+        }
+        .team-select:hover:not(:disabled), .text-input:hover:not(:disabled) { border-color: rgba(212,175,55,0.4); }
+        .team-select:focus, .text-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+        .team-select:disabled { opacity: 0.4; cursor: not-allowed; }
+        .team-select option { background-color: #101627; color: #e8ecf5; }
+        .text-input::placeholder { color: rgba(255,255,255,0.25); font-weight: 500; }
+
+        .real-score-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: linear-gradient(135deg, #1c2440, #0f1424);
+            border: 1px solid rgba(212,175,55,0.45);
+            color: var(--gold-light);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            padding: 3px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+
+        .result-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-top: 6px;
+        }
+        .result-badge.correct-score {
+            background: linear-gradient(135deg, rgba(212,175,55,0.25), rgba(212,175,55,0.1));
+            border: 1px solid rgba(212,175,55,0.6);
+            color: var(--gold-light);
+            box-shadow: 0 0 12px rgba(212,175,55,0.2);
+        }
+        .result-badge.correct-result {
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.45);
+            color: #4ade80;
+        }
+        .result-badge.incorrect {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #f87171;
+        }
+
+        .locked-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 14, 26, 0.82);
+            backdrop-filter: blur(6px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1.5rem;
+            text-align: center;
+            padding: 2rem;
+        }
+        .lock-icon-ring {
+            width: 5.5rem; height: 5.5rem;
+            border-radius: 999px;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(138,21,56,0.25), transparent 70%);
+            border: 1.5px solid rgba(138,21,56,0.5);
+            margin-bottom: 1.25rem;
+            animation: pulse-lock 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse-lock {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(138,21,56,0.35); }
+            50% { box-shadow: 0 0 0 14px rgba(138,21,56,0); }
+        }
+
+        .round-title { display: flex; align-items: center; gap: 0.75rem; }
+        .round-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(212,175,55,0.5), transparent);
+        }
+
+        .pts-chip {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+            color: #aab2c5;
+            white-space: nowrap;
+        }
+        .pts-chip.gold {
+            border-color: rgba(212,175,55,0.5);
+            background: rgba(212,175,55,0.1);
+            color: var(--gold-light);
+        }
+        .pts-chip.accent {
+            border-color: rgba(158,27,66,0.7);
+            background: linear-gradient(135deg, #8a1538, #9e1b42);
+            color: #fff;
+        }
+        .pts-chip.green {
+            border-color: rgba(16,185,129,0.5);
+            background: rgba(16,185,129,0.1);
+            color: #4ade80;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #f0d77b, #d4af37 55%, #b5952f);
+            color: #0a0e1a;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            border-radius: 999px;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 25px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .btn-gold:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(212,175,55,0.55), inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .btn-gold:active:not(:disabled) { transform: translateY(0); }
+        .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-outline {
+            border: 1.5px solid rgba(255,255,255,0.18);
+            color: #cbd2e0;
+            font-weight: 600;
+            border-radius: 999px;
+            transition: all 0.2s;
+        }
+        .btn-outline:hover { border-color: rgba(212,175,55,0.6); color: var(--gold-light); }
+
+        .btn-danger {
+            border: 1.5px solid rgba(239,68,68,0.4);
+            color: #f87171;
+            font-weight: 600;
+            border-radius: 999px;
+            transition: all 0.2s;
+        }
+        .btn-danger:hover { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.7); }
+
+        .navbar-blur {
+            background: rgba(10, 14, 26, 0.88);
+            backdrop-filter: blur(14px);
+        }
+
+        .vs-divider {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            color: rgba(212,175,55,0.6);
+        }
+
+        /* Tabs */
+        .tab-btn {
+            position: relative;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #8a93a8;
+            padding: 0.6rem 0.25rem;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #e8ecf5; }
+        .tab-btn.active { color: var(--gold-light); }
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 0; right: 0;
+            height: 2.5px;
+            border-radius: 999px;
+            background: linear-gradient(to right, #f0d77b, #d4af37);
+            box-shadow: 0 0 10px rgba(212,175,55,0.5);
+        }
+
+        /* Switch */
+        .switch {
+            position: relative;
+            width: 3.25rem; height: 1.75rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .switch::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 3px;
+            width: 1.35rem; height: 1.35rem;
+            border-radius: 999px;
+            background: #8a93a8;
+            transition: all 0.3s;
+        }
+        .switch.on {
+            background: linear-gradient(135deg, rgba(212,175,55,0.5), rgba(212,175,55,0.25));
+            border-color: var(--gold);
+            box-shadow: 0 0 14px rgba(212,175,55,0.35);
+        }
+        .switch.on::after {
+            left: calc(100% - 1.35rem - 3px);
+            background: linear-gradient(135deg, #f0d77b, #d4af37);
+        }
+
+        /* Tabla leaderboard */
+        .lb-row {
+            background: linear-gradient(160deg, rgba(255,255,255,0.035), rgba(255,255,255,0.008));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 1rem;
+            transition: all 0.25s;
+        }
+        .lb-row:hover { border-color: rgba(212,175,55,0.35); }
+        .lb-row.me {
+            border-color: rgba(212,175,55,0.55);
+            box-shadow: 0 0 18px rgba(212,175,55,0.12);
+        }
+        .lb-row.top1 { background: linear-gradient(160deg, rgba(212,175,55,0.14), rgba(212,175,55,0.03)); border-color: rgba(212,175,55,0.5); }
+        .lb-row.top2 { background: linear-gradient(160deg, rgba(203,213,225,0.10), rgba(203,213,225,0.02)); border-color: rgba(203,213,225,0.3); }
+        .lb-row.top3 { background: linear-gradient(160deg, rgba(217,119,6,0.10), rgba(217,119,6,0.02)); border-color: rgba(217,119,6,0.35); }
+
+        .avatar-circle {
+            width: 2.6rem; height: 2.6rem;
+            border-radius: 999px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            background: linear-gradient(145deg, rgba(212,175,55,0.25), rgba(138,21,56,0.25));
+            border: 1px solid rgba(212,175,55,0.4);
+            color: var(--gold-light);
+            flex-shrink: 0;
+        }
+
+        /* Login */
+        .login-bg {
+            background-image:
+                linear-gradient(160deg, rgba(10, 14, 26, 0.94) 30%, rgba(10, 14, 26, 0.75)),
+                url('Mascotas 2.jpg');
+            background-size: cover;
+            background-position: center 30%;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.45s ease; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fadeUp 0.5s ease both; }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(5, 8, 16, 0.75);
+            backdrop-filter: blur(5px);
+            z-index: 90;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* Status pill */
+        .status-pill {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+        .status-pill.live { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: #4ade80; }
+        .status-pill.pending { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #8a93a8; }
+        .status-pill.admin { background: rgba(138,21,56,0.25); border: 1px solid rgba(158,27,66,0.6); color: #f3a4bc; }
+        .status-pill.closed { background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.45); color: var(--gold-light); }
+
+        ::selection { background: rgba(212,175,55,0.35); color: #fff; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0a0e1a; }
+        ::-webkit-scrollbar-thumb { background: #2a3350; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+    </style>
+</head>
+<body class="text-gray-200 font-sans">
+
+<!-- ============ VISTA LOGIN ============ -->
+<div id="view-login" class="login-bg min-h-screen flex items-center justify-center px-4 py-10 relative z-10">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8 animate-fade-up">
+            <img src="16843852531648.jpg" alt="Logo" class="h-20 w-20 rounded-full object-cover border-2 border-brand-gold shadow-gold mx-auto mb-5">
+            <h1 class="font-display font-black text-4xl gold-text leading-tight">QUINIELA MUNDIALISTA</h1>
+            <p class="text-xs uppercase tracking-[0.35em] text-gray-500 font-semibold mt-2">Edición Pro · Acceso por invitación</p>
+        </div>
+
+        <div class="glass-card p-7 sm:p-9 animate-fade-up" style="animation-delay: 0.1s" id="login-card">
+            <!-- Paso 1: usuario -->
+            <div id="login-step-user">
+                <h2 class="font-display font-bold text-xl text-white mb-1.5">Bienvenido</h2>
+                <p class="text-sm text-gray-400 mb-6">Ingresa tu nombre de usuario. Solo los invitados de la lista pueden participar.</p>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-2">Usuario</label>
+                <input type="text" id="login-username" class="text-input w-full p-4 text-lg" placeholder="Tu nombre de invitado" autocomplete="username">
+                <p id="login-user-error" class="text-sm text-red-400 mt-3 hidden font-medium"></p>
+                <button onclick="loginContinue()" class="btn-gold w-full py-4 text-lg mt-6">Continuar</button>
+            </div>
+
+            <!-- Paso 2a: crear contraseña (primer ingreso) -->
+            <div id="login-step-create" class="hidden">
+                <button onclick="loginBack()" class="text-xs text-gray-500 hover:text-brand-gold mb-4 flex items-center gap-1 font-semibold">← Cambiar usuario</button>
+                <h2 class="font-display font-bold text-xl text-white mb-1.5">¡Hola, <span id="create-name" class="gold-text"></span>! 👋</h2>
+                <p class="text-sm text-gray-400 mb-6">Es tu primer ingreso. Crea una contraseña para proteger tu cuenta. No podrás crear otros usuarios ni eliminar tu cuenta.</p>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-2">Nueva contraseña</label>
+                <input type="password" id="create-pass-1" class="text-input w-full p-4" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-2 mt-4">Confirmar contraseña</label>
+                <input type="password" id="create-pass-2" class="text-input w-full p-4" placeholder="Repite la contraseña" autocomplete="new-password">
+                <p id="create-error" class="text-sm text-red-400 mt-3 hidden font-medium"></p>
+                <button onclick="loginCreatePassword()" class="btn-gold w-full py-4 text-lg mt-6">Crear cuenta y entrar</button>
+            </div>
+
+            <!-- Paso 2b: ingresar contraseña -->
+            <div id="login-step-pass" class="hidden">
+                <button onclick="loginBack()" class="text-xs text-gray-500 hover:text-brand-gold mb-4 flex items-center gap-1 font-semibold">← Cambiar usuario</button>
+                <h2 class="font-display font-bold text-xl text-white mb-1.5">Hola de nuevo, <span id="pass-name" class="gold-text"></span></h2>
+                <p class="text-sm text-gray-400 mb-6">Ingresa tu contraseña para continuar.</p>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 block mb-2">Contraseña</label>
+                <input type="password" id="login-password" class="text-input w-full p-4" placeholder="Tu contraseña" autocomplete="current-password">
+                <p id="pass-error" class="text-sm text-red-400 mt-3 hidden font-medium"></p>
+                <button onclick="loginSubmitPassword()" class="btn-gold w-full py-4 text-lg mt-6">Entrar</button>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-600 mt-6 font-medium">🔒 Plataforma privada. Si no estás en la lista, contacta al administrador.</p>
+    </div>
+</div>
+
+<!-- ============ VISTA APP ============ -->
+<div id="view-app" class="hidden relative z-10 pb-28">
+
+    <!-- Navbar -->
+    <nav class="navbar-blur text-white sticky top-0 z-50 border-b border-brand-gold/25 shadow-2xl">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-[4.5rem]">
+                <div class="flex items-center gap-3">
+                    <img src="16843852531648.jpg" alt="Logo" class="h-10 w-10 rounded-full object-cover border-2 border-brand-gold shadow-gold-sm">
+                    <div class="hidden sm:block">
+                        <span class="font-display font-black text-lg tracking-wider gold-text block leading-none">QUINIELA PRO</span>
+                        <span class="text-[9px] uppercase tracking-[0.3em] text-gray-500 font-semibold">Mundial</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="bg-white/5 px-4 py-1.5 rounded-full border border-brand-gold/30 flex items-center gap-2.5 transition-all duration-300" id="score-badge">
+                        <svg class="w-4 h-4 text-brand-gold" fill="currentColor" viewBox="0 0 20 20"><path d="M10 1l2.39 4.84L17.7 6.6l-3.85 3.75.91 5.3L10 13.15l-4.76 2.5.91-5.3L2.3 6.6l5.31-.76L10 1z"/></svg>
+                        <div class="leading-none">
+                            <span class="text-brand-gold/80 font-bold uppercase text-[8px] tracking-widest block mb-0.5">Mis puntos</span>
+                            <span class="font-display font-black text-xl text-white" id="total-score">0</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1.5 pr-3 py-1.5">
+                        <div class="avatar-circle !w-8 !h-8 !text-xs" id="nav-avatar">?</div>
+                        <span class="font-semibold text-sm hidden md:block" id="nav-username"></span>
+                        <button onclick="logout()" title="Cerrar sesión" class="text-gray-500 hover:text-red-400 transition-colors ml-1">
+                            <svg class="w-4.5 h-4.5 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabs -->
+            <div class="flex gap-6 border-t border-white/5 overflow-x-auto">
+                <button class="tab-btn active" data-tab="predicciones" onclick="switchTab('predicciones')">⚽ Mis Pronósticos</button>
+                <button class="tab-btn" data-tab="posiciones" onclick="switchTab('posiciones')">🏆 Posiciones</button>
+                <button class="tab-btn hidden" id="tab-admin-btn" data-tab="admin" onclick="switchTab('admin')">🛡️ Administración</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ====== TAB: PRONÓSTICOS ====== -->
+    <div id="tab-predicciones" class="tab-panel max-w-5xl mx-auto px-4 sm:px-6 pt-10 space-y-10">
+
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 animate-fade-up">
+            <div>
+                <h1 class="font-display font-black text-3xl sm:text-4xl text-white">Mis Pronósticos</h1>
+                <p class="text-sm text-gray-400 mt-1.5">Tus predicciones se guardan automáticamente. Cada partido se puntúa en cuanto el marcador oficial queda registrado.</p>
+            </div>
+            <span class="pts-chip green flex-shrink-0" id="save-indicator" style="opacity:0; transition: opacity 0.4s;">✓ Guardado</span>
+        </div>
+
+        <!-- Campeón -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up">
+            <div class="flex items-start gap-5 mb-7">
+                <div class="section-icon">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1a.75.75 0 01.75.75v.54a5.5 5.5 0 014.21 4.21h.54a.75.75 0 010 1.5h-.54a5.51 5.51 0 01-2.7 3.72c.34 1.03.55 2.13.6 3.28h1.39a.75.75 0 010 1.5H5.75a.75.75 0 010-1.5h1.39c.05-1.15.26-2.25.6-3.28a5.51 5.51 0 01-2.7-3.72h-.54a.75.75 0 010-1.5h.54a5.5 5.5 0 014.21-4.21v-.54A.75.75 0 0110 1z" clip-rule="evenodd"/></svg>
+                </div>
+                <div class="flex-1">
+                    <span class="text-[10px] uppercase tracking-[0.25em] text-brand-gold/70 font-bold">Paso 01</span>
+                    <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mt-0.5">Predicción del Campeón</h2>
+                    <p class="text-sm text-gray-400 font-medium mt-1.5">Acertar al campeón del torneo otorga <span class="pts-chip accent ml-1">+50 pts</span></p>
+                </div>
+            </div>
+            <div class="relative md:w-1/2">
+                <select id="champion-select" class="team-select block w-full p-4 text-lg">
+                    <option value="">Selecciona al equipo campeón...</option>
+                </select>
+            </div>
+            <div id="champion-eval" class="mt-3"></div>
+        </section>
+
+        <!-- Grupos -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.1s">
+            <div class="flex items-start gap-5 mb-7">
+                <div class="section-icon">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                </div>
+                <div class="w-full flex flex-col sm:flex-row justify-between sm:items-start gap-3">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-[0.25em] text-brand-gold/70 font-bold">Paso 02</span>
+                        <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mt-0.5">Fase de Grupos</h2>
+                        <p class="text-sm text-gray-400 font-medium mt-1.5">Los pronósticos se bloquean cuando el partido termina.</p>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <span class="pts-chip">Acierto: 3 pts</span>
+                        <span class="pts-chip gold">Exacto: +2 pts</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="groups-container"></div>
+        </section>
+
+        <!-- Eliminatorias -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.2s" id="knockout-section">
+            <div class="locked-overlay" id="knockout-lock">
+                <div class="lock-icon-ring">
+                    <svg class="w-10 h-10 text-brand-accentLight" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-2xl sm:text-3xl font-display font-bold text-white">Fase de Eliminatorias Bloqueada</h3>
+                <p class="text-gray-400 text-sm sm:text-base mt-3 max-w-lg font-medium leading-relaxed">El administrador liberará esta fase cuando termine la Fase de Grupos. Recibirás acceso automáticamente.</p>
+            </div>
+
+            <div class="flex items-start gap-5 mb-9">
+                <div class="section-icon">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <span class="text-[10px] uppercase tracking-[0.25em] text-brand-gold/70 font-bold">Paso 03</span>
+                    <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mt-0.5">Fase de Eliminatorias</h2>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="pts-chip">Octavos: +5 pts</span>
+                        <span class="pts-chip">Cuartos: +10 pts</span>
+                        <span class="pts-chip">Semis: +15 pts</span>
+                        <span class="pts-chip accent">Final: +25 pts</span>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-12" id="knockout-container"></div>
+        </section>
+    </div>
+
+    <!-- ====== TAB: POSICIONES ====== -->
+    <div id="tab-posiciones" class="tab-panel hidden max-w-4xl mx-auto px-4 sm:px-6 pt-10 space-y-8">
+        <div class="animate-fade-up">
+            <h1 class="font-display font-black text-3xl sm:text-4xl text-white">Tabla de Posiciones</h1>
+            <p class="text-sm text-gray-400 mt-1.5">Ranking en tiempo real. Los puntos se actualizan automáticamente al cerrar cada partido.</p>
+        </div>
+        <div class="space-y-3 animate-fade-up" id="leaderboard-container" style="animation-delay: 0.1s"></div>
+    </div>
+
+    <!-- ====== TAB: ADMIN ====== -->
+    <div id="tab-admin" class="tab-panel hidden max-w-5xl mx-auto px-4 sm:px-6 pt-10 space-y-10">
+        <div class="animate-fade-up">
+            <h1 class="font-display font-black text-3xl sm:text-4xl text-white flex items-center gap-3">Panel de Administración <span class="status-pill admin">Solo Admin</span></h1>
+            <p class="text-sm text-gray-400 mt-1.5">Control total de la plataforma: resultados oficiales, fases y usuarios. Al cerrar un partido, los puntos de todos se recalculan al instante.</p>
+        </div>
+
+        <!-- Control del torneo -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up">
+            <h2 class="font-display font-bold text-2xl text-white mb-6">🎛️ Control del Torneo</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="match-card p-5 flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-display font-bold text-base text-white">Liberar Eliminatorias</h3>
+                        <p class="text-xs text-gray-400 mt-1">Desbloquea la fase de octavos para todos los jugadores.</p>
+                    </div>
+                    <div class="switch" id="ko-switch" onclick="adminToggleKnockout()"></div>
+                </div>
+                <div class="match-card p-5">
+                    <h3 class="font-display font-bold text-base text-white mb-1">Campeón oficial</h3>
+                    <p class="text-xs text-gray-400 mb-3">Al definirlo se otorgan los +50 pts a quien acertó.</p>
+                    <select id="admin-champion" class="team-select w-full p-3 text-sm" onchange="adminSetChampion(this.value)">
+                        <option value="">— Torneo en curso —</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resultados grupos -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.05s">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                <h2 class="font-display font-bold text-2xl text-white">📋 Resultados · Fase de Grupos</h2>
+                <span class="pts-chip">Marca «Cerrar partido» al terminar para puntuar</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="admin-groups-container"></div>
+        </section>
+
+        <!-- Resultados eliminatorias -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.1s">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                <h2 class="font-display font-bold text-2xl text-white">🏟️ Resultados · Eliminatorias</h2>
+                <span class="pts-chip">Define los cruces reales y sus marcadores</span>
+            </div>
+            <div class="space-y-10" id="admin-knockout-container"></div>
+        </section>
+
+        <!-- Usuarios -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.15s">
+            <h2 class="font-display font-bold text-2xl text-white mb-2">👥 Usuarios Invitados</h2>
+            <p class="text-sm text-gray-400 mb-6">Solo los usuarios de esta lista pueden entrar. Los jugadores no pueden registrarse por su cuenta ni eliminar su cuenta.</p>
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <input type="text" id="admin-new-user" class="text-input flex-1 p-3.5" placeholder="Nombre del nuevo invitado...">
+                <button onclick="adminAddUser()" class="btn-gold px-7 py-3.5 text-sm flex-shrink-0">+ Agregar invitado</button>
+            </div>
+            <div class="space-y-2.5" id="admin-users-container"></div>
+        </section>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div id="confirm-modal" class="modal-backdrop hidden">
+    <div class="glass-card p-7 max-w-sm w-full">
+        <h3 class="font-display font-bold text-xl text-white mb-2" id="confirm-title">¿Confirmar?</h3>
+        <p class="text-sm text-gray-400 mb-7" id="confirm-message"></p>
+        <div class="flex gap-3 justify-end">
+            <button onclick="closeConfirm(false)" class="btn-outline px-5 py-2.5 text-sm">Cancelar</button>
+            <button onclick="closeConfirm(true)" class="btn-gold px-6 py-2.5 text-sm" id="confirm-ok-btn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// =====================================================
+// DATOS BASE
+// =====================================================
+const TEAMS = [
+    "Alemania", "Arabia Saudita", "Argentina", "Australia", "Brasil",
+    "Corea del Sur", "Costa Rica", "Croacia", "Ecuador", "España", "Estados Unidos",
+    "Francia", "Holanda", "Inglaterra", "Irán", "Japón", "Marruecos",
+    "México", "Polonia", "Portugal", "Qatar", "Senegal", "Serbia", "Suiza"
+].sort();
+
+const GROUP_MATCHES = [
+    { id: 'g1', teamA: "Qatar", flagA: "🇶🇦", teamB: "Ecuador", flagB: "🇪🇨" },
+    { id: 'g2', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda", flagB: "🇳🇱" },
+    { id: 'g3', teamA: "Inglaterra", flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán", flagB: "🇮🇷" },
+    { id: 'g4', teamA: "Argentina", flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
+    { id: 'g5', teamA: "México", flagA: "🇲🇽", teamB: "Polonia", flagB: "🇵🇱" },
+    { id: 'g6', teamA: "Francia", flagA: "🇫🇷", teamB: "Australia", flagB: "🇦🇺" },
+    { id: 'g7', teamA: "España", flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
+    { id: 'g8', teamA: "Alemania", flagA: "🇩🇪", teamB: "Japón", flagB: "🇯🇵" }
+];
+
+const ROUNDS_CONFIG = [
+    { id: 'octavos', key: 'o', name: 'Octavos de Final', matches: 8, ptsTeam: 5 },
+    { id: 'cuartos', key: 'c', name: 'Cuartos de Final', matches: 4, ptsTeam: 10 },
+    { id: 'semis',   key: 's', name: 'Semifinal', matches: 2, ptsTeam: 15 },
+    { id: 'final',   key: 'f', name: 'Gran Final', matches: 1, ptsTeam: 25 }
+];
+
+// =====================================================
+// BASE DE DATOS LOCAL (localStorage)
+// =====================================================
+const DB_KEY = 'qmp_db_v2';
+const SESSION_KEY = 'qmp_session_v2';
+
+// Lista inicial de invitados — el administrador puede agregar más desde su panel.
+const SEED_ALLOWED = ['Eduardo', 'Invitado1', 'Invitado2', 'Invitado3'];
+const SEED_ADMINS = ['Eduardo'];
+
+function defaultDB() {
+    const results = { champion: "", groups: {}, knockout: {} };
+    GROUP_MATCHES.forEach(m => { results.groups[m.id] = { a: null, b: null, finished: false }; });
+    ROUNDS_CONFIG.forEach(r => {
+        for (let i = 1; i <= r.matches; i++) {
+            results.knockout[`ko_${r.key}_${i}`] = { teamA: "", teamB: "", a: null, b: null, finished: false };
+        }
+    });
+    return {
+        allowed: [...SEED_ALLOWED],
+        admins: [...SEED_ADMINS],
+        users: {},        // username -> { passHash, createdAt }
+        predictions: {},  // username -> { champion, groups, knockout }
+        results,
+        knockoutUnlocked: false
+    };
+}
+
+let DB = null;
+
+function loadDB() {
+    try {
+        const raw = localStorage.getItem(DB_KEY);
+        if (raw) { DB = JSON.parse(raw); return; }
+    } catch (e) { console.warn('DB corrupta, regenerando', e); }
+    DB = defaultDB();
+    saveDB();
+}
+
+function saveDB() {
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+}
+
+function ensurePrediction(username) {
+    if (!DB.predictions[username]) {
+        const pred = { champion: "", groups: {}, knockout: {} };
+        GROUP_MATCHES.forEach(m => { pred.groups[m.id] = { a: "", b: "" }; });
+        ROUNDS_CONFIG.forEach(r => {
+            for (let i = 1; i <= r.matches; i++) {
+                pred.knockout[`ko_${r.key}_${i}`] = { teamA: "", teamB: "", a: "", b: "" };
+            }
+        });
+        DB.predictions[username] = pred;
+        saveDB();
+    }
+    return DB.predictions[username];
+}
+
+// =====================================================
+// SEGURIDAD (hash de contraseñas)
+// =====================================================
+async function hashPass(pass) {
+    const data = 'qmp::' + pass;
+    if (window.crypto && crypto.subtle) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+        return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback para contextos sin Web Crypto
+    let h = 5381;
+    for (const c of data) { h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; }
+    return 'djb2_' + h.toString(16);
+}
+
+// =====================================================
+// SESIÓN Y LOGIN
+// =====================================================
+let CURRENT_USER = null;
+let pendingUsername = null;
+
+function findAllowedUser(name) {
+    const clean = name.trim().toLowerCase();
+    return DB.allowed.find(u => u.toLowerCase() === clean) || null;
+}
+
+function isAdmin(username) {
+    return DB.admins.some(a => a.toLowerCase() === username.toLowerCase());
+}
+
+function showLoginError(elId, msg) {
+    const el = document.getElementById(elId);
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    const card = document.getElementById('login-card');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+}
+
+function loginContinue() {
+    const input = document.getElementById('login-username');
+    const name = input.value.trim();
+    document.getElementById('login-user-error').classList.add('hidden');
+    if (!name) { showLoginError('login-user-error', 'Escribe tu nombre de usuario.'); return; }
+
+    const canonical = findAllowedUser(name);
+    if (!canonical) {
+        showLoginError('login-user-error', '🚫 Este usuario no está en la lista de invitados. Contacta al administrador.');
+        return;
+    }
+    pendingUsername = canonical;
+    document.getElementById('login-step-user').classList.add('hidden');
+
+    if (DB.users[canonical] && DB.users[canonical].passHash) {
+        document.getElementById('pass-name').textContent = canonical;
+        document.getElementById('login-step-pass').classList.remove('hidden');
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').focus();
+    } else {
+        document.getElementById('create-name').textContent = canonical;
+        document.getElementById('login-step-create').classList.remove('hidden');
+        document.getElementById('create-pass-1').value = '';
+        document.getElementById('create-pass-2').value = '';
+        document.getElementById('create-pass-1').focus();
+    }
+}
+
+function loginBack() {
+    pendingUsername = null;
+    document.getElementById('login-step-create').classList.add('hidden');
+    document.getElementById('login-step-pass').classList.add('hidden');
+    document.getElementById('login-step-user').classList.remove('hidden');
+    document.getElementById('create-error').classList.add('hidden');
+    document.getElementById('pass-error').classList.add('hidden');
+}
+
+async function loginCreatePassword() {
+    const p1 = document.getElementById('create-pass-1').value;
+    const p2 = document.getElementById('create-pass-2').value;
+    document.getElementById('create-error').classList.add('hidden');
+
+    if (p1.length < 4) { showLoginError('create-error', 'La contraseña debe tener al menos 4 caracteres.'); return; }
+    if (p1 !== p2) { showLoginError('create-error', 'Las contraseñas no coinciden.'); return; }
+
+    DB.users[pendingUsername] = { passHash: await hashPass(p1), createdAt: Date.now() };
+    ensurePrediction(pendingUsername);
+    saveDB();
+    startSession(pendingUsername);
+    toast(`🎉 ¡Cuenta creada! Bienvenido, ${pendingUsername}.`);
+}
+
+async function loginSubmitPassword() {
+    const pass = document.getElementById('login-password').value;
+    document.getElementById('pass-error').classList.add('hidden');
+
+    const hash = await hashPass(pass);
+    if (hash !== DB.users[pendingUsername].passHash) {
+        showLoginError('pass-error', 'Contraseña incorrecta. Inténtalo de nuevo.');
+        return;
+    }
+    startSession(pendingUsername);
+    toast(`👋 ¡Bienvenido de vuelta, ${pendingUsername}!`);
+}
+
+function startSession(username) {
+    CURRENT_USER = username;
+    localStorage.setItem(SESSION_KEY, username);
+    document.getElementById('view-login').classList.add('hidden');
+    document.getElementById('view-app').classList.remove('hidden');
+    renderApp();
+    window.scrollTo(0, 0);
+}
+
+function logout() {
+    localStorage.removeItem(SESSION_KEY);
+    CURRENT_USER = null;
+    pendingUsername = null;
+    document.getElementById('view-app').classList.add('hidden');
+    document.getElementById('view-login').classList.remove('hidden');
+    loginBack();
+    document.getElementById('login-username').value = '';
+}
+
+// =====================================================
+// PUNTUACIÓN AUTOMÁTICA
+// =====================================================
+function realTeamsInRound(round) {
+    const set = new Set();
+    for (let i = 1; i <= round.matches; i++) {
+        const rm = DB.results.knockout[`ko_${round.key}_${i}`];
+        if (rm.teamA) set.add(rm.teamA);
+        if (rm.teamB) set.add(rm.teamB);
+    }
+    return set;
+}
+
+function scoreMatch(predA, predB, realA, realB) {
+    if (predA === "" || predB === "" || realA === null || realB === null) return 0;
+    const pA = parseInt(predA), pB = parseInt(predB);
+    let pts = 0;
+    if (Math.sign(pA - pB) === Math.sign(realA - realB)) {
+        pts += 3;
+        if (pA === realA && pB === realB) pts += 2;
+    }
+    return pts;
+}
+
+function computeScore(username) {
+    const pred = DB.predictions[username];
+    const breakdown = { champion: 0, groups: 0, knockout: 0, total: 0 };
+    if (!pred) return breakdown;
+
+    if (DB.results.champion && pred.champion === DB.results.champion) breakdown.champion = 50;
+
+    GROUP_MATCHES.forEach(m => {
+        const res = DB.results.groups[m.id];
+        if (res.finished) {
+            breakdown.groups += scoreMatch(pred.groups[m.id].a, pred.groups[m.id].b, res.a, res.b);
+        }
+    });
+
+    if (DB.knockoutUnlocked) {
+        ROUNDS_CONFIG.forEach(round => {
+            const realTeams = realTeamsInRound(round);
+            for (let i = 1; i <= round.matches; i++) {
+                const mid = `ko_${round.key}_${i}`;
+                const p = pred.knockout[mid];
+                const r = DB.results.knockout[mid];
+                if (p.teamA && realTeams.has(p.teamA)) breakdown.knockout += round.ptsTeam;
+                if (p.teamB && realTeams.has(p.teamB)) breakdown.knockout += round.ptsTeam;
+                if (r.finished) {
+                    breakdown.knockout += scoreMatch(p.a, p.b, r.a, r.b);
+                }
+            }
+        });
+    }
+
+    breakdown.total = breakdown.champion + breakdown.groups + breakdown.knockout;
+    return breakdown;
+}
+
+// =====================================================
+// RENDER GENERAL
+// =====================================================
+function renderApp() {
+    ensurePrediction(CURRENT_USER);
+    document.getElementById('nav-username').textContent = CURRENT_USER;
+    document.getElementById('nav-avatar').textContent = CURRENT_USER.slice(0, 2).toUpperCase();
+    document.getElementById('tab-admin-btn').classList.toggle('hidden', !isAdmin(CURRENT_USER));
+
+    renderPredictions();
+    renderLeaderboard();
+    if (isAdmin(CURRENT_USER)) renderAdmin();
+    updateScoreBadge();
+}
+
+function updateScoreBadge(animate = false) {
+    const total = computeScore(CURRENT_USER).total;
+    const el = document.getElementById('total-score');
+    if (animate && el.innerText !== String(total)) {
+        animateValue(el, parseInt(el.innerText) || 0, total, 700);
+        const badge = document.getElementById('score-badge');
+        badge.classList.add('shadow-gold', 'scale-110');
+        setTimeout(() => badge.classList.remove('shadow-gold', 'scale-110'), 700);
+    } else {
+        el.innerText = total;
+    }
+}
+
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('tab-' + name).classList.remove('hidden');
+    if (name === 'posiciones') renderLeaderboard();
+    if (name === 'admin') renderAdmin();
+    window.scrollTo({ top: 0 });
+}
+
+// =====================================================
+// RENDER: PRONÓSTICOS DEL JUGADOR
+// =====================================================
+function renderPredictions() {
+    const pred = ensurePrediction(CURRENT_USER);
+
+    // Campeón
+    const championSelect = document.getElementById('champion-select');
+    championSelect.innerHTML = '<option value="">Selecciona al equipo campeón...</option>' +
+        TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    championSelect.value = pred.champion;
+    championSelect.disabled = !!DB.results.champion;
+    const champEval = document.getElementById('champion-eval');
+    if (DB.results.champion) {
+        const hit = pred.champion === DB.results.champion;
+        champEval.innerHTML = `<span class="real-score-badge">🏆 Campeón oficial: ${DB.results.champion}</span> ` +
+            (pred.champion ? `<span class="result-badge ${hit ? 'correct-score' : 'incorrect'}">${hit ? '🎯 ¡Acertaste! +50 pts' : '✗ Sin acierto'}</span>` : '');
+    } else {
+        champEval.innerHTML = '';
+    }
+
+    // Grupos
+    const container = document.getElementById('groups-container');
+    let html = '';
+    GROUP_MATCHES.forEach(match => {
+        const res = DB.results.groups[match.id];
+        const p = pred.groups[match.id];
+        const locked = res.finished;
+        let realScoreHTML = '', evalHTML = '';
+        if (locked) {
+            realScoreHTML = `<div class="w-full flex justify-center mt-2"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Final: ${res.a} - ${res.b}</div></div>`;
+            const pts = scoreMatch(p.a, p.b, res.a, res.b);
+            if (p.a !== "" && p.b !== "") {
+                if (pts === 5) evalHTML = `<span class="result-badge correct-score">🎯 ¡Marcador Exacto! +5 pts</span>`;
+                else if (pts === 3) evalHTML = `<span class="result-badge correct-result">✓ Resultado Correcto +3 pts</span>`;
+                else evalHTML = `<span class="result-badge incorrect">✗ Incorrecto 0 pts</span>`;
+            }
+        }
+        html += `
+            <div class="match-card flex flex-col p-4 sm:p-5">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagA}</span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <input type="number" data-pred="g" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
+                        <span class="vs-divider px-0.5">VS</span>
+                        <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
+                    </div>
+                    <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="text-3xl drop-shadow-md flex-shrink-0">${match.flagB}</span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${match.teamB}</span>
+                    </div>
+                </div>
+                ${realScoreHTML}
+                <div class="text-center w-full">${evalHTML}</div>
+            </div>`;
+    });
+    container.innerHTML = html;
+
+    // Eliminatorias
+    const lockOverlay = document.getElementById('knockout-lock');
+    lockOverlay.style.display = DB.knockoutUnlocked ? 'none' : 'flex';
+    const koContainer = document.getElementById('knockout-container');
+    koContainer.classList.toggle('blur-[2px]', !DB.knockoutUnlocked);
+    koContainer.classList.toggle('opacity-40', !DB.knockoutUnlocked);
+
+    const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    let koHtml = '';
+    ROUNDS_CONFIG.forEach(round => {
+        koHtml += `
+        <div class="relative">
+            <div class="round-title mb-5">
+                <h3 class="font-display font-bold text-lg sm:text-xl text-brand-goldLight whitespace-nowrap">${round.name}</h3>
+                <span class="pts-chip gold flex-shrink-0">+${round.ptsTeam} pts por equipo</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md md:mx-auto' : ''}">`;
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const p = pred.knockout[mid];
+            const r = DB.results.knockout[mid];
+            const locked = !DB.knockoutUnlocked || r.finished;
+            let realScoreHTML = '';
+            if (r.finished) {
+                realScoreHTML = `<div class="absolute -bottom-3.5 left-1/2 transform -translate-x-1/2 real-score-badge">Final: ${r.a} - ${r.b}</div>`;
+            }
+            koHtml += `
+                <div class="match-card p-4 sm:p-5 flex flex-col items-center gap-4 relative pb-7">
+                    <div class="w-full flex items-center gap-2">
+                        <select data-pred="ko" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2.5 text-center text-sm" ${locked ? 'disabled' : ''}>${teamOptions}</select>
+                        <span class="vs-divider flex-shrink-0">VS</span>
+                        <select data-pred="ko" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2.5 text-center text-sm" ${locked ? 'disabled' : ''}>${teamOptions}</select>
+                    </div>
+                    <div class="flex items-center gap-3 bg-black/30 px-5 py-2 rounded-xl border border-white/5">
+                        <input type="number" data-pred="ko" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
+                        <span class="text-gray-600 font-bold">:</span>
+                        <input type="number" data-pred="ko" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
+                    </div>
+                    ${realScoreHTML}
+                </div>`;
+        }
+        koHtml += `</div></div>`;
+    });
+    koContainer.innerHTML = koHtml;
+
+    // Restaurar selects de equipos
+    ROUNDS_CONFIG.forEach(round => {
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const p = pred.knockout[mid];
+            const selA = document.querySelector(`select[data-match="${mid}"][data-side="teamA"]`);
+            const selB = document.querySelector(`select[data-match="${mid}"][data-side="teamB"]`);
+            if (selA) selA.value = p.teamA;
+            if (selB) selB.value = p.teamB;
+        }
+    });
+}
+
+// Guardado automático de pronósticos
+let saveIndicatorTimer = null;
+function flashSaved() {
+    const el = document.getElementById('save-indicator');
+    el.style.opacity = '1';
+    clearTimeout(saveIndicatorTimer);
+    saveIndicatorTimer = setTimeout(() => { el.style.opacity = '0'; }, 1500);
+}
+
+document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (!CURRENT_USER) return;
+
+    if (t.id === 'champion-select') {
+        ensurePrediction(CURRENT_USER).champion = t.value;
+        saveDB(); flashSaved(); updateScoreBadge(true);
+        return;
+    }
+    if (t.dataset.pred === 'g') {
+        ensurePrediction(CURRENT_USER).groups[t.dataset.match][t.dataset.side] = t.value;
+        saveDB(); flashSaved(); updateScoreBadge(true);
+        return;
+    }
+    if (t.dataset.pred === 'ko') {
+        ensurePrediction(CURRENT_USER).knockout[t.dataset.match][t.dataset.side] = t.value;
+        saveDB(); flashSaved(); updateScoreBadge(true);
+        return;
+    }
+});
+
+// =====================================================
+// RENDER: LEADERBOARD
+// =====================================================
+function renderLeaderboard() {
+    const container = document.getElementById('leaderboard-container');
+    const rows = DB.allowed.map(u => {
+        const registered = !!(DB.users[u] && DB.users[u].passHash);
+        return { name: u, registered, score: computeScore(u) };
+    }).sort((a, b) => b.score.total - a.score.total || a.name.localeCompare(b.name));
+
+    const medals = ['🥇', '🥈', '🥉'];
+    container.innerHTML = rows.map((row, idx) => {
+        const isMe = row.name === CURRENT_USER;
+        const topClass = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+        return `
+        <div class="lb-row ${topClass} ${isMe ? 'me' : ''} flex items-center gap-3 sm:gap-5 p-4 sm:p-5">
+            <div class="w-10 text-center font-display font-black text-xl ${idx < 3 ? '' : 'text-gray-500'}">${medals[idx] || (idx + 1)}</div>
+            <div class="avatar-circle">${row.name.slice(0, 2).toUpperCase()}</div>
+            <div class="flex-1 min-w-0">
+                <div class="font-display font-bold text-base sm:text-lg text-white truncate flex items-center gap-2">
+                    ${row.name}
+                    ${isMe ? '<span class="pts-chip gold !text-[9px]">Tú</span>' : ''}
+                    ${isAdmin(row.name) ? '<span class="status-pill admin">Admin</span>' : ''}
+                </div>
+                <div class="text-[11px] text-gray-500 font-medium mt-0.5">
+                    ${row.registered
+                        ? `Campeón: ${row.score.champion} · Grupos: ${row.score.groups} · Eliminatorias: ${row.score.knockout}`
+                        : 'Aún no ha creado su cuenta'}
+                </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="font-display font-black text-2xl sm:text-3xl ${idx === 0 ? 'gold-text' : 'text-white'}">${row.score.total}</div>
+                <div class="text-[9px] uppercase tracking-widest text-gray-500 font-bold">pts</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// =====================================================
+// RENDER: PANEL ADMIN
+// =====================================================
+function renderAdmin() {
+    if (!isAdmin(CURRENT_USER)) return;
+
+    // Switch eliminatorias
+    document.getElementById('ko-switch').classList.toggle('on', DB.knockoutUnlocked);
+
+    // Campeón oficial
+    const champSel = document.getElementById('admin-champion');
+    champSel.innerHTML = '<option value="">— Torneo en curso —</option>' + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    champSel.value = DB.results.champion;
+
+    // Resultados grupos
+    const gc = document.getElementById('admin-groups-container');
+    gc.innerHTML = GROUP_MATCHES.map(match => {
+        const res = DB.results.groups[match.id];
+        return `
+        <div class="match-card p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-2xl">${match.flagA}</span>
+                    <span class="font-display font-semibold text-sm truncate">${match.teamA}</span>
+                    <span class="vs-divider">VS</span>
+                    <span class="font-display font-semibold text-sm truncate">${match.teamB}</span>
+                    <span class="text-2xl">${match.flagB}</span>
+                </div>
+                <span class="status-pill ${res.finished ? 'closed' : 'live'}">${res.finished ? 'Cerrado' : 'Abierto'}</span>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <input type="number" data-res="g" data-match="${match.id}" data-side="a" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.a ?? ''}" ${res.finished ? 'disabled' : ''}/>
+                    <span class="text-gray-600 font-bold">:</span>
+                    <input type="number" data-res="g" data-match="${match.id}" data-side="b" class="score-input !w-12 !h-12" min="0" placeholder="–" value="${res.b ?? ''}" ${res.finished ? 'disabled' : ''}/>
+                </div>
+                ${res.finished
+                    ? `<button onclick="adminReopenGroup('${match.id}')" class="btn-outline px-4 py-2 text-xs">Reabrir</button>`
+                    : `<button onclick="adminFinishGroup('${match.id}')" class="btn-gold px-4 py-2 text-xs">Cerrar partido ✓</button>`}
+            </div>
+        </div>`;
+    }).join('');
+
+    // Resultados eliminatorias
+    const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    const kc = document.getElementById('admin-knockout-container');
+    kc.innerHTML = ROUNDS_CONFIG.map(round => {
+        let inner = '';
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const r = DB.results.knockout[mid];
+            inner += `
+            <div class="match-card p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Partido ${i}</span>
+                    <span class="status-pill ${r.finished ? 'closed' : 'live'}">${r.finished ? 'Cerrado' : 'Abierto'}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select data-res="ko" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2 text-center text-xs" ${r.finished ? 'disabled' : ''}>${teamOptions}</select>
+                    <span class="vs-divider flex-shrink-0">VS</span>
+                    <select data-res="ko" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs" ${r.finished ? 'disabled' : ''}>${teamOptions}</select>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <input type="number" data-res="ko" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${r.a ?? ''}" ${r.finished ? 'disabled' : ''}/>
+                        <span class="text-gray-600 font-bold">:</span>
+                        <input type="number" data-res="ko" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${r.b ?? ''}" ${r.finished ? 'disabled' : ''}/>
+                    </div>
+                    ${r.finished
+                        ? `<button onclick="adminReopenKO('${mid}')" class="btn-outline px-3 py-2 text-xs">Reabrir</button>`
+                        : `<button onclick="adminFinishKO('${mid}')" class="btn-gold px-3 py-2 text-xs">Cerrar ✓</button>`}
+                </div>
+            </div>`;
+        }
+        return `
+        <div>
+            <div class="round-title mb-4">
+                <h3 class="font-display font-bold text-lg text-brand-goldLight whitespace-nowrap">${round.name}</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md' : ''}">${inner}</div>
+        </div>`;
+    }).join('');
+
+    // Restaurar selects de cruces reales
+    ROUNDS_CONFIG.forEach(round => {
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const r = DB.results.knockout[mid];
+            const selA = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamA"]`);
+            const selB = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamB"]`);
+            if (selA) selA.value = r.teamA;
+            if (selB) selB.value = r.teamB;
+        }
+    });
+
+    // Usuarios
+    const uc = document.getElementById('admin-users-container');
+    uc.innerHTML = DB.allowed.map(u => {
+        const registered = !!(DB.users[u] && DB.users[u].passHash);
+        const admin = isAdmin(u);
+        return `
+        <div class="lb-row flex items-center gap-3 p-3.5">
+            <div class="avatar-circle !w-9 !h-9 !text-xs">${u.slice(0, 2).toUpperCase()}</div>
+            <div class="flex-1 min-w-0">
+                <span class="font-semibold text-sm text-white truncate block">${u}</span>
+            </div>
+            ${admin ? '<span class="status-pill admin">Admin</span>' : ''}
+            <span class="status-pill ${registered ? 'live' : 'pending'}">${registered ? 'Registrado' : 'Pendiente'}</span>
+            <div class="flex gap-2 flex-shrink-0">
+                ${registered && !admin ? `<button onclick="adminResetPass('${u.replace(/'/g, "\\'")}')" class="btn-outline px-3 py-1.5 text-[11px]">Resetear clave</button>` : ''}
+                ${!admin ? `<button onclick="adminRemoveUser('${u.replace(/'/g, "\\'")}')" class="btn-danger px-3 py-1.5 text-[11px]">Quitar</button>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Captura de resultados (admin) — se guardan al escribir, se puntúan al cerrar
+document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (!CURRENT_USER || !isAdmin(CURRENT_USER)) return;
+    if (t.dataset.res === 'g') {
+        const res = DB.results.groups[t.dataset.match];
+        res[t.dataset.side] = t.value === '' ? null : parseInt(t.value);
+        saveDB();
+    }
+    if (t.dataset.res === 'ko') {
+        const r = DB.results.knockout[t.dataset.match];
+        if (t.dataset.side === 'teamA' || t.dataset.side === 'teamB') {
+            r[t.dataset.side] = t.value;
+        } else {
+            r[t.dataset.side] = t.value === '' ? null : parseInt(t.value);
+        }
+        saveDB();
+    }
+});
+
+// =====================================================
+// ACCIONES ADMIN
+// =====================================================
+function adminToggleKnockout() {
+    DB.knockoutUnlocked = !DB.knockoutUnlocked;
+    saveDB();
+    renderAdmin();
+    renderPredictions();
+    updateScoreBadge(true);
+    toast(DB.knockoutUnlocked ? '🔓 Eliminatorias liberadas para todos los jugadores.' : '🔒 Eliminatorias bloqueadas.');
+}
+
+function adminSetChampion(value) {
+    DB.results.champion = value;
+    saveDB();
+    renderPredictions();
+    renderLeaderboard();
+    updateScoreBadge(true);
+    toast(value ? `🏆 Campeón oficial registrado: ${value}. Puntos otorgados.` : 'Campeón oficial borrado.');
+}
+
+function adminFinishGroup(matchId) {
+    const res = DB.results.groups[matchId];
+    if (res.a === null || res.b === null) { toast('⚠️ Captura ambos marcadores antes de cerrar el partido.', true); return; }
+    res.finished = true;
+    saveDB();
+    renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
+    toast('✅ Partido cerrado. Puntos recalculados para todos.');
+}
+
+function adminReopenGroup(matchId) {
+    DB.results.groups[matchId].finished = false;
+    saveDB();
+    renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
+    toast('↩️ Partido reabierto. Sus puntos quedaron en pausa.');
+}
+
+function adminFinishKO(matchId) {
+    const r = DB.results.knockout[matchId];
+    if (!r.teamA || !r.teamB) { toast('⚠️ Selecciona los dos equipos del cruce real.', true); return; }
+    if (r.a === null || r.b === null) { toast('⚠️ Captura ambos marcadores antes de cerrar.', true); return; }
+    r.finished = true;
+    saveDB();
+    renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
+    toast('✅ Partido cerrado. Puntos recalculados para todos.');
+}
+
+function adminReopenKO(matchId) {
+    DB.results.knockout[matchId].finished = false;
+    saveDB();
+    renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
+    toast('↩️ Partido reabierto.');
+}
+
+function adminAddUser() {
+    const input = document.getElementById('admin-new-user');
+    const name = input.value.trim();
+    if (!name) { toast('⚠️ Escribe un nombre.', true); return; }
+    if (findAllowedUser(name)) { toast('⚠️ Ese usuario ya está en la lista.', true); return; }
+    DB.allowed.push(name);
+    saveDB();
+    input.value = '';
+    renderAdmin(); renderLeaderboard();
+    toast(`✅ ${name} agregado a la lista de invitados.`);
+}
+
+function adminResetPass(username) {
+    askConfirm(`Resetear contraseña`, `${username} deberá crear una contraseña nueva en su próximo ingreso. ¿Continuar?`, () => {
+        delete DB.users[username];
+        saveDB();
+        renderAdmin();
+        toast(`🔑 Contraseña de ${username} reseteada.`);
+    });
+}
+
+function adminRemoveUser(username) {
+    askConfirm(`Quitar invitado`, `Se eliminará a ${username} de la lista junto con sus pronósticos. Esta acción no se puede deshacer. ¿Continuar?`, () => {
+        DB.allowed = DB.allowed.filter(u => u !== username);
+        delete DB.users[username];
+        delete DB.predictions[username];
+        saveDB();
+        renderAdmin(); renderLeaderboard();
+        toast(`🗑️ ${username} eliminado de la plataforma.`);
+    });
+}
+
+// =====================================================
+// UI: MODAL + TOAST + UTILS
+// =====================================================
+let confirmCallback = null;
+function askConfirm(title, message, onOk) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    confirmCallback = onOk;
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+function closeConfirm(accepted) {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    if (accepted && confirmCallback) confirmCallback();
+    confirmCallback = null;
+}
+
+function toast(message, isError = false) {
+    const notif = document.createElement('div');
+    const borderClass = isError ? 'border-red-500/60' : 'border-brand-gold/50';
+    notif.className = `fixed top-24 right-4 bg-brand-navy/95 backdrop-blur-xl text-white px-6 py-4 rounded-2xl shadow-2xl z-[100] transform transition-all duration-500 translate-x-[120%] border ${borderClass} flex items-center gap-3 max-w-sm`;
+    notif.innerHTML = `<div class="font-medium text-sm">${message}</div>`;
+    document.body.appendChild(notif);
+    requestAnimationFrame(() => notif.classList.remove('translate-x-[120%]'));
+    setTimeout(() => {
+        notif.classList.add('translate-x-[120%]');
+        setTimeout(() => notif.remove(), 500);
+    }, 4000);
+}
+
+function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.innerHTML = Math.floor(progress * (end - start) + start);
+        if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+}
+
+// =====================================================
+// ARRANQUE
+// =====================================================
+document.addEventListener('DOMContentLoaded', () => {
+    loadDB();
+
+    // Enter para avanzar en login
+    document.getElementById('login-username').addEventListener('keydown', e => { if (e.key === 'Enter') loginContinue(); });
+    document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') loginSubmitPassword(); });
+    document.getElementById('create-pass-2').addEventListener('keydown', e => { if (e.key === 'Enter') loginCreatePassword(); });
+
+    // Restaurar sesión
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved && findAllowedUser(saved) && DB.users[saved]) {
+        CURRENT_USER = findAllowedUser(saved);
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-app').classList.remove('hidden');
+        renderApp();
+    }
+});
+</script>
+
+</body>
+</html>
