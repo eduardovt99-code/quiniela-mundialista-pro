@@ -717,21 +717,30 @@
 // DATOS BASE
 // =====================================================
 const TEAMS = [
-    "Alemania", "Arabia Saudita", "Argentina", "Australia", "Brasil",
-    "Corea del Sur", "Costa Rica", "Croacia", "Ecuador", "España", "Estados Unidos",
-    "Francia", "Holanda", "Inglaterra", "Irán", "Japón", "Marruecos",
-    "México", "Polonia", "Portugal", "Qatar", "Senegal", "Serbia", "Suiza"
+    "Alemania", "Arabia Saudita", "Argentina", "Australia", "Bélgica", "Brasil",
+    "Camerún", "Canadá", "Corea del Sur", "Costa Rica", "Croacia", "Dinamarca",
+    "Ecuador", "España", "Estados Unidos", "Francia", "Gales", "Ghana", "Holanda",
+    "Inglaterra", "Irán", "Japón", "Marruecos", "México", "Polonia", "Portugal",
+    "Qatar", "Senegal", "Serbia", "Suiza", "Túnez", "Uruguay"
 ].sort();
 
 const GROUP_MATCHES = [
-    { id: 'g1', teamA: "Qatar", flagA: "🇶🇦", teamB: "Ecuador", flagB: "🇪🇨" },
-    { id: 'g2', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda", flagB: "🇳🇱" },
-    { id: 'g3', teamA: "Inglaterra", flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán", flagB: "🇮🇷" },
-    { id: 'g4', teamA: "Argentina", flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
-    { id: 'g5', teamA: "México", flagA: "🇲🇽", teamB: "Polonia", flagB: "🇵🇱" },
-    { id: 'g6', teamA: "Francia", flagA: "🇫🇷", teamB: "Australia", flagB: "🇦🇺" },
-    { id: 'g7', teamA: "España", flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
-    { id: 'g8', teamA: "Alemania", flagA: "🇩🇪", teamB: "Japón", flagB: "🇯🇵" }
+    { id: 'g1', group: 'A', teamA: "Qatar", flagA: "🇶🇦", teamB: "Ecuador", flagB: "🇪🇨" },
+    { id: 'g2', group: 'A', teamA: "Senegal", flagA: "🇸🇳", teamB: "Holanda", flagB: "🇳🇱" },
+    { id: 'g3', group: 'B', teamA: "Inglaterra", flagA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", teamB: "Irán", flagB: "🇮🇷" },
+    { id: 'g4', group: 'B', teamA: "Estados Unidos", flagA: "🇺🇸", teamB: "Gales", flagB: "🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+    { id: 'g5', group: 'C', teamA: "Argentina", flagA: "🇦🇷", teamB: "Arabia Saudita", flagB: "🇸🇦" },
+    { id: 'g6', group: 'C', teamA: "México", flagA: "🇲🇽", teamB: "Polonia", flagB: "🇵🇱" },
+    { id: 'g7', group: 'D', teamA: "Francia", flagA: "🇫🇷", teamB: "Australia", flagB: "🇦🇺" },
+    { id: 'g8', group: 'D', teamA: "Dinamarca", flagA: "🇩🇰", teamB: "Túnez", flagB: "🇹🇳" },
+    { id: 'g9', group: 'E', teamA: "España", flagA: "🇪🇸", teamB: "Costa Rica", flagB: "🇨🇷" },
+    { id: 'g10', group: 'E', teamA: "Alemania", flagA: "🇩🇪", teamB: "Japón", flagB: "🇯🇵" },
+    { id: 'g11', group: 'F', teamA: "Bélgica", flagA: "🇧🇪", teamB: "Canadá", flagB: "🇨🇦" },
+    { id: 'g12', group: 'F', teamA: "Marruecos", flagA: "🇲🇦", teamB: "Croacia", flagB: "🇭🇷" },
+    { id: 'g13', group: 'G', teamA: "Brasil", flagA: "🇧🇷", teamB: "Serbia", flagB: "🇷🇸" },
+    { id: 'g14', group: 'G', teamA: "Suiza", flagA: "🇨🇭", teamB: "Camerún", flagB: "🇨🇲" },
+    { id: 'g15', group: 'H', teamA: "Portugal", flagA: "🇵🇹", teamB: "Ghana", flagB: "🇬🇭" },
+    { id: 'g16', group: 'H', teamA: "Uruguay", flagA: "🇺🇾", teamB: "Corea del Sur", flagB: "🇰🇷" }
 ];
 
 const ROUNDS_CONFIG = [
@@ -762,7 +771,7 @@ const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
 const SESSION_KEY = 'qmp_session_v2';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
-const SEED_ALLOWED = ['Eduardo', 'Invitado1', 'Invitado2', 'Invitado3'];
+const SEED_ALLOWED = ['Eduardo', 'Prueba'];
 const SEED_ADMINS = ['Eduardo'];
 
 function defaultDB() {
