@@ -451,6 +451,22 @@
         .status-pill.pending { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #8a93a8; }
         .status-pill.admin { background: rgba(138,21,56,0.25); border: 1px solid rgba(158,27,66,0.6); color: #f3a4bc; }
         .status-pill.closed { background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.45); color: var(--gold-light); }
+        .status-pill.urgent { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.5); color: #fde047; }
+
+        .today-banner {
+            background: linear-gradient(160deg, rgba(212,175,55,0.12), rgba(138,21,56,0.08));
+            border: 1px solid rgba(212,175,55,0.35);
+            border-radius: 1.25rem;
+            box-shadow: 0 12px 40px -12px rgba(0,0,0,0.5);
+        }
+        .today-match-row {
+            background: rgba(10, 14, 26, 0.55);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.875rem;
+            transition: border-color 0.2s;
+        }
+        .today-match-row:hover { border-color: rgba(212,175,55,0.35); }
+        .today-match-row.needs-fill { border-color: rgba(234,179,8,0.45); background: rgba(234,179,8,0.06); }
 
         ::selection { background: rgba(212,175,55,0.35); color: #fff; }
         ::-webkit-scrollbar { width: 10px; }
@@ -562,6 +578,9 @@
             </div>
             <span class="pts-chip green flex-shrink-0" id="save-indicator" style="opacity:0; transition: opacity 0.4s;">✓ Guardado</span>
         </div>
+
+        <!-- Aviso: partidos de hoy -->
+        <div id="today-matches-banner" class="hidden"></div>
 
         <!-- Campeón -->
         <section class="glass-card p-6 sm:p-9 animate-fade-up">
@@ -1114,11 +1133,88 @@ function realTeamsInRound(round) {
 
 const LOCK_BEFORE_MS = 3600000; // 1 hora antes del partido
 
+function mxDateKey(timestamp) {
+    return new Date(timestamp).toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+}
+
+function formatMatchTimeMX(timestamp) {
+    return new Date(timestamp).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatLockDeadlineMX(timestamp) {
+    return new Date(timestamp - LOCK_BEFORE_MS).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 function formatMatchDateTimeMX(timestamp) {
     const d = new Date(timestamp);
     const fecha = d.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const hora = d.toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false });
+    const hora = formatMatchTimeMX(timestamp);
     return `${fecha} · ${hora} hrs CDMX`;
+}
+
+function renderTodayMatchesBanner(pred) {
+    const banner = document.getElementById('today-matches-banner');
+    const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' });
+    const todayMatches = GROUP_MATCHES
+        .filter(m => m.timestamp && mxDateKey(m.timestamp) === todayKey)
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+    if (!todayMatches.length) {
+        banner.classList.add('hidden');
+        banner.innerHTML = '';
+        return;
+    }
+
+    const todayLabel = new Date().toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City', weekday: 'long', day: 'numeric', month: 'long' });
+    const pendingCount = todayMatches.filter(m => {
+        const p = pred.groups[m.id] || { a: '', b: '' };
+        return !isGroupPredictionLocked(m.id) && (p.a === '' || p.b === '');
+    }).length;
+
+    const rows = todayMatches.map(match => {
+        const p = pred.groups[match.id] || { a: '', b: '' };
+        const filled = p.a !== '' && p.b !== '';
+        const locked = isGroupPredictionLocked(match.id);
+        const needsFill = !filled && !locked;
+        let statusHTML = '';
+        if (locked) {
+            statusHTML = filled
+                ? '<span class="status-pill closed">✓ Enviado · cerrado</span>'
+                : '<span class="status-pill closed">🔒 Cerrado</span>';
+        } else if (filled) {
+            statusHTML = `<span class="status-pill live">✓ Listo · cierra ${formatLockDeadlineMX(match.timestamp)} hrs</span>`;
+        } else {
+            statusHTML = `<span class="status-pill urgent">⚠️ Llena antes de ${formatLockDeadlineMX(match.timestamp)} hrs</span>`;
+        }
+        return `
+        <div class="today-match-row flex flex-col sm:flex-row sm:items-center gap-3 p-3.5 ${needsFill ? 'needs-fill' : ''}">
+            <div class="flex items-center gap-3 sm:w-28 flex-shrink-0">
+                <span class="font-display font-black text-lg text-brand-goldLight">${formatMatchTimeMX(match.timestamp)}</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">hrs</span>
+            </div>
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="text-[10px] font-bold text-brand-gold/80 uppercase tracking-widest flex-shrink-0">Gp ${match.group}</span>
+                <span class="fi fi-${match.codeA} text-xl rounded-sm flex-shrink-0"></span>
+                <span class="font-semibold text-sm text-gray-100 truncate">${match.teamA}</span>
+                <span class="text-gray-600 font-bold text-xs flex-shrink-0">vs</span>
+                <span class="font-semibold text-sm text-gray-100 truncate">${match.teamB}</span>
+                <span class="fi fi-${match.codeB} text-xl rounded-sm flex-shrink-0"></span>
+            </div>
+            <div class="flex-shrink-0">${statusHTML}</div>
+        </div>`;
+    }).join('');
+
+    banner.className = 'today-banner p-5 sm:p-6 animate-fade-up';
+    banner.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+            <div>
+                <p class="text-[10px] uppercase tracking-[0.3em] text-brand-gold font-bold">📣 Partidos de hoy</p>
+                <h2 class="font-display font-bold text-xl sm:text-2xl text-white mt-1 capitalize">${todayLabel}</h2>
+                <p class="text-xs text-gray-400 mt-1">Los marcadores se bloquean <strong class="text-brand-goldLight">1 hora antes</strong> de cada partido (hora CDMX).</p>
+            </div>
+            ${pendingCount > 0 ? `<span class="status-pill urgent self-start">⚠️ ${pendingCount} pendiente${pendingCount > 1 ? 's' : ''}</span>` : '<span class="status-pill live self-start">✓ Todo listo hoy</span>'}
+        </div>
+        <div class="space-y-2">${rows}</div>`;
 }
 
 function isMatchTimeLocked(timestamp) {
@@ -1229,6 +1325,7 @@ function switchTab(name) {
 // =====================================================
 function renderPredictions() {
     const pred = ensurePrediction(CURRENT_USER);
+    renderTodayMatchesBanner(pred);
 
     // Campeón
     const championSelect = document.getElementById('champion-select');
