@@ -716,8 +716,28 @@
             <div class="space-y-10" id="admin-knockout-container"></div>
         </section>
 
+        <!-- Pronósticos de participantes -->
+        <section id="admin-preds-section" class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.12s">
+            <h2 class="font-display font-bold text-2xl text-white mb-2">📝 Pronósticos de participantes</h2>
+            <p class="text-sm text-gray-400 mb-5">Ver y editar los marcadores de cualquier jugador. Los cambios se guardan automáticamente.</p>
+
+            <div class="mb-8">
+                <h3 class="font-display font-bold text-base text-brand-goldLight mb-3">🏆 Campeón por participante</h3>
+                <p class="text-xs text-gray-500 mb-4">Asigna o corrige el pronóstico de campeón de cada jugador.</p>
+                <div class="space-y-2" id="admin-champions-grid"></div>
+            </div>
+
+            <h3 class="font-display font-bold text-base text-brand-goldLight mb-3">⚽ Marcadores por partido</h3>
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <select id="admin-pred-user" class="team-select flex-1 p-3.5 text-sm" onchange="adminSelectEditUser(this.value)">
+                    <option value="">— Selecciona un participante —</option>
+                </select>
+            </div>
+            <div id="admin-user-preds-container"></div>
+        </section>
+
         <!-- Respaldo de datos -->
-        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.12s">
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.14s">
             <h2 class="font-display font-bold text-2xl text-white mb-2">💾 Respaldo y restauración</h2>
             <p class="text-sm text-gray-400 mb-4">Cada guardado crea una copia en <code class="text-brand-goldLight">quiniela/backups_latest</code>. También puedes exportar o importar un archivo JSON.</p>
             <p class="text-xs text-gray-500 mb-4" id="backup-status"></p>
@@ -732,7 +752,7 @@
         </section>
 
         <!-- Usuarios -->
-        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.15s">
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.16s">
             <h2 class="font-display font-bold text-2xl text-white mb-2">👥 Usuarios Invitados</h2>
             <p class="text-sm text-gray-400 mb-6">Solo los usuarios de esta lista pueden entrar. Los jugadores no pueden registrarse por su cuenta ni eliminar su cuenta.</p>
             <div class="flex flex-col sm:flex-row gap-3 mb-6">
@@ -1048,6 +1068,7 @@ async function hashPass(pass) {
 // =====================================================
 let CURRENT_USER = null;
 let pendingUsername = null;
+let ADMIN_EDIT_USER = null;
 
 function findAllowedUser(name) {
     const clean = name.trim().toLowerCase();
@@ -1056,6 +1077,10 @@ function findAllowedUser(name) {
 
 function isAdmin(username) {
     return DB.admins.some(a => a.toLowerCase() === username.toLowerCase());
+}
+
+function allParticipantNames() {
+    return [...new Set([...DB.allowed, ...Object.keys(DB.predictions || {})])].sort((a, b) => a.localeCompare(b));
 }
 
 function showLoginError(elId, msg) {
@@ -1693,20 +1718,207 @@ function renderAdmin() {
             </div>
             ${admin ? '<span class="status-pill admin">Admin</span>' : ''}
             <span class="status-pill ${registered ? 'live' : 'pending'}">${registered ? 'Registrado' : 'Pendiente'}</span>
-            <div class="flex gap-2 flex-shrink-0">
+            <div class="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                <button onclick="adminSelectEditUser('${u.replace(/'/g, "\\'")}')" class="btn-gold px-3 py-1.5 text-[11px]">Pronósticos</button>
                 ${registered && !admin ? `<button onclick="adminResetPass('${u.replace(/'/g, "\\'")}')" class="btn-outline px-3 py-1.5 text-[11px]">Resetear clave</button>` : ''}
                 ${!admin ? `<button onclick="adminRemoveUser('${u.replace(/'/g, "\\'")}')" class="btn-danger px-3 py-1.5 text-[11px]">Quitar</button>` : ''}
             </div>
         </div>`;
     }).join('');
 
+    const predSel = document.getElementById('admin-pred-user');
+    const participants = allParticipantNames();
+    predSel.innerHTML = '<option value="">— Selecciona un participante —</option>' +
+        participants.map(u => `<option value="${u.replace(/"/g, '&quot;')}">${u}</option>`).join('');
+    if (ADMIN_EDIT_USER && participants.includes(ADMIN_EDIT_USER)) {
+        predSel.value = ADMIN_EDIT_USER;
+    } else {
+        ADMIN_EDIT_USER = predSel.value || null;
+    }
+    renderAdminChampionGrid();
+    renderAdminUserPredictions();
+
     refreshBackupStatus();
+}
+
+function renderAdminChampionGrid() {
+    const grid = document.getElementById('admin-champions-grid');
+    if (!grid) return;
+    const participants = allParticipantNames();
+    if (!participants.length) {
+        grid.innerHTML = '<p class="text-sm text-gray-500">No hay participantes.</p>';
+        return;
+    }
+    const teamOptions = '<option value="">Sin elegir...</option>' +
+        TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    grid.innerHTML = participants.map(u => {
+        const pred = ensurePrediction(u);
+        const attrUser = u.replace(/"/g, '&quot;');
+        const official = DB.results.champion
+            ? (pred.champion === DB.results.champion
+                ? '<span class="status-pill live">+50 pts</span>'
+                : (pred.champion ? '<span class="status-pill closed">0 pts</span>' : ''))
+            : '';
+        return `
+        <div class="lb-row flex flex-col sm:flex-row sm:items-center gap-3 p-3.5">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="avatar-circle !w-9 !h-9 !text-xs">${u.slice(0, 2).toUpperCase()}</div>
+                <span class="font-semibold text-sm text-white truncate">${u}</span>
+                ${official}
+            </div>
+            <select data-apred="champion" data-user="${attrUser}" class="team-select w-full sm:w-72 p-2.5 text-sm">${teamOptions}</select>
+        </div>`;
+    }).join('');
+    participants.forEach(u => {
+        const pred = ensurePrediction(u);
+        const sel = grid.querySelector(`select[data-apred="champion"][data-user="${u.replace(/"/g, '&quot;')}"]`);
+        if (sel) sel.value = pred.champion || '';
+    });
+}
+
+function adminSelectEditUser(username) {
+    if (!isAdmin(CURRENT_USER)) return;
+    ADMIN_EDIT_USER = username || null;
+    const sel = document.getElementById('admin-pred-user');
+    if (sel) sel.value = username || '';
+    renderAdminUserPredictions();
+    if (username) {
+        document.getElementById('admin-preds-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function renderAdminUserPredictions() {
+    const container = document.getElementById('admin-user-preds-container');
+    if (!container) return;
+    const username = ADMIN_EDIT_USER;
+    if (!username || !allParticipantNames().includes(username)) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-8">Selecciona un participante para ver y editar sus pronósticos.</p>';
+        return;
+    }
+
+    const pred = ensurePrediction(username);
+    const attrUser = username.replace(/"/g, '&quot;');
+    const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+
+    let html = `
+        <div class="match-card p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="avatar-circle !w-10 !h-10">${username.slice(0, 2).toUpperCase()}</div>
+                <div>
+                    <div class="font-display font-bold text-white">${username}</div>
+                    <div class="text-[11px] text-gray-500">Edición como administrador — sin límite de horario</div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+                <span class="text-xs text-gray-400">Pronóstico de campeón</span>
+                <select data-apred="champion" data-user="${attrUser}" class="team-select w-full p-2.5 text-sm">
+                    <option value="">Sin elegir...</option>
+                    ${TEAMS.map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">`;
+
+    const groups = {};
+    GROUP_MATCHES.forEach(m => { if (!groups[m.group]) groups[m.group] = []; groups[m.group].push(m); });
+    Object.keys(groups).sort().forEach(groupLetter => {
+        html += `<div class="lg:col-span-2"><h3 class="round-title font-display font-bold text-lg text-brand-gold/90 uppercase tracking-widest mb-4 mt-2">Grupo ${groupLetter}</h3></div>`;
+        groups[groupLetter].forEach(match => {
+            const p = pred.groups[match.id] || { a: '', b: '' };
+            const res = DB.results.groups[match.id] || { a: null, b: null, finished: false };
+            const official = res.finished && hasOfficialScore(res)
+                ? `<span class="text-[10px] text-gray-400">Oficial: ${res.a} - ${res.b}</span>` : '';
+            html += `
+            <div class="match-card p-4">
+                <div class="flex items-center justify-between gap-2 mb-3 text-xs text-gray-400">
+                    <span class="truncate">${match.teamA} vs ${match.teamB}</span>
+                    ${official}
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}"/>
+                    <span class="vs-divider">VS</span>
+                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}"/>
+                </div>
+            </div>`;
+        });
+    });
+    html += `</div>`;
+
+    html += `<div class="mt-8 space-y-8">`;
+    ROUNDS_CONFIG.forEach(round => {
+        html += `
+        <div>
+            <div class="round-title mb-4">
+                <h3 class="font-display font-bold text-lg text-brand-goldLight">${round.name}</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md' : ''}">`;
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const p = pred.knockout[mid] || { teamA: '', teamB: '', a: '', b: '' };
+            html += `
+            <div class="match-card p-4 flex flex-col gap-3">
+                <div class="flex items-center gap-2">
+                    <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
+                    <span class="vs-divider flex-shrink-0">VS</span>
+                    <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${p.a}"/>
+                    <span class="text-gray-600 font-bold">:</span>
+                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${p.b}"/>
+                </div>
+            </div>`;
+        }
+        html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    container.innerHTML = html;
+
+    const champSel = container.querySelector('select[data-apred="champion"]');
+    if (champSel) champSel.value = pred.champion || '';
+    ROUNDS_CONFIG.forEach(round => {
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const p = pred.knockout[mid];
+            const selA = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamA"]`);
+            const selB = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamB"]`);
+            if (selA && p) selA.value = p.teamA || '';
+            if (selB && p) selB.value = p.teamB || '';
+        }
+    });
+}
+
+function adminSaveUserPrediction(t) {
+    const user = t.dataset.user;
+    if (!user || !allParticipantNames().includes(user)) return;
+    const pred = ensurePrediction(user);
+    if (t.dataset.apred === 'champion') {
+        pred.champion = t.value;
+    } else if (t.dataset.apred === 'g') {
+        pred.groups[t.dataset.match][t.dataset.side] = t.value;
+    } else if (t.dataset.apred === 'ko') {
+        pred.knockout[t.dataset.match][t.dataset.side] = t.value;
+    }
+    saveDB();
+    flashSaved();
+    adminRefreshScores();
+    if (t.dataset.apred === 'champion') {
+        const gridSel = document.querySelector(`#admin-champions-grid select[data-apred="champion"][data-user="${user.replace(/"/g, '&quot;')}"]`);
+        const detailSel = document.querySelector(`#admin-user-preds-container select[data-apred="champion"][data-user="${user.replace(/"/g, '&quot;')}"]`);
+        if (gridSel && gridSel !== t) gridSel.value = t.value;
+        if (detailSel && detailSel !== t) detailSel.value = t.value;
+    }
 }
 
 // Captura de resultados (admin) — se guardan al escribir; puntúan cuando hay marcador y partido cerrado
 document.addEventListener('input', (e) => {
     const t = e.target;
     if (!CURRENT_USER || !isAdmin(CURRENT_USER)) return;
+    if (t.dataset.apred) {
+        adminSaveUserPrediction(t);
+        return;
+    }
     if (t.dataset.res === 'g') {
         const res = DB.results.groups[t.dataset.match];
         res[t.dataset.side] = t.value === '' ? null : parseInt(t.value);
@@ -1723,6 +1935,12 @@ document.addEventListener('input', (e) => {
         saveDB();
         if (r.finished) adminRefreshScores();
     }
+});
+
+document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!CURRENT_USER || !isAdmin(CURRENT_USER)) return;
+    if (t.dataset.apred) adminSaveUserPrediction(t);
 });
 
 // =====================================================
