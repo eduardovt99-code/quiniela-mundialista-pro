@@ -716,6 +716,21 @@
             <div class="space-y-10" id="admin-knockout-container"></div>
         </section>
 
+        <!-- Respaldo de datos -->
+        <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.12s">
+            <h2 class="font-display font-bold text-2xl text-white mb-2">💾 Respaldo y restauración</h2>
+            <p class="text-sm text-gray-400 mb-4">Cada guardado crea una copia en <code class="text-brand-goldLight">quiniela/backups_latest</code>. También puedes exportar o importar un archivo JSON.</p>
+            <p class="text-xs text-gray-500 mb-4" id="backup-status"></p>
+            <div class="flex flex-col sm:flex-row flex-wrap gap-3">
+                <button onclick="adminExportDB()" class="btn-gold px-5 py-3 text-sm">⬇️ Exportar JSON</button>
+                <label class="btn-gold px-5 py-3 text-sm cursor-pointer text-center">
+                    ⬆️ Restaurar desde JSON
+                    <input type="file" accept="application/json,.json" class="hidden" onchange="adminImportDB(this)">
+                </label>
+                <button onclick="adminRestoreLatestBackup()" class="btn-gold px-5 py-3 text-sm">♻️ Usar respaldo automático</button>
+            </div>
+        </section>
+
         <!-- Usuarios -->
         <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.15s">
             <h2 class="font-display font-bold text-2xl text-white mb-2">👥 Usuarios Invitados</h2>
@@ -883,6 +898,7 @@ if (!firebase.apps.length) {
 }
 const dbFirestore = firebase.firestore();
 const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
+const BACKUP_DOC = dbFirestore.collection('quiniela').doc('backups_latest');
 const SESSION_KEY = 'qmp_session_v2';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
@@ -963,9 +979,27 @@ function listenDB() {
     });
 }
 
+function cloneDB(data) {
+    return JSON.parse(JSON.stringify(data));
+}
+
+function countFilledPredictions(db) {
+    if (!db?.predictions) return 0;
+    let total = 0;
+    Object.values(db.predictions).forEach(pred => {
+        Object.values(pred.groups || {}).forEach(g => {
+            if (g.a !== '' && g.a !== null && g.b !== '' && g.b !== null) total++;
+        });
+    });
+    return total;
+}
+
 async function saveDB() {
     try {
         await DB_DOC.set(DB);
+        const backup = cloneDB(DB);
+        backup.backedUpAt = Date.now();
+        await BACKUP_DOC.set(backup);
     } catch(e) {
         console.error("Error guardando en Firestore:", e);
     }
@@ -1665,6 +1699,8 @@ function renderAdmin() {
             </div>
         </div>`;
     }).join('');
+
+    refreshBackupStatus();
 }
 
 // Captura de resultados (admin) — se guardan al escribir; puntúan cuando hay marcador y partido cerrado
@@ -1761,6 +1797,100 @@ function adminReopenKO(matchId) {
     saveDB();
     renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
     toast('↩️ Partido reabierto.');
+}
+
+function adminExportDB() {
+    const payload = cloneDB(DB);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quiniela-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('⬇️ Respaldo descargado.');
+}
+
+function adminImportDB(input) {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+            if (!data.predictions || !data.users || !data.results) {
+                toast('⚠️ El archivo no parece un respaldo válido.', true);
+                return;
+            }
+            const users = Object.keys(data.predictions || {}).join(', ') || 'sin pronósticos';
+            askConfirm(
+                'Restaurar respaldo',
+                `Se reemplazará la base actual con el archivo (${users}). Los datos actuales se sobrescriben. ¿Continuar?`,
+                async () => {
+                    DB = data;
+                    if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
+                    await saveDB();
+                    renderApp();
+                    toast('✅ Respaldo restaurado correctamente.');
+                }
+            );
+        } catch (e) {
+            toast('⚠️ No se pudo leer el archivo JSON.', true);
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function adminRestoreLatestBackup() {
+    try {
+        const snap = await BACKUP_DOC.get();
+        if (!snap.exists) {
+            toast('⚠️ Aún no hay respaldo automático guardado.', true);
+            return;
+        }
+        const data = snap.data();
+        const users = Object.keys(data.predictions || {}).join(', ') || 'sin pronósticos';
+        const filled = countFilledPredictions(data);
+        const when = data.backedUpAt
+            ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+            : 'fecha desconocida';
+        askConfirm(
+            'Restaurar respaldo automático',
+            `Respaldo del ${when}. Participantes: ${users}. Marcadores llenos: ${filled}. ¿Restaurar?`,
+            async () => {
+                delete data.backedUpAt;
+                DB = data;
+                if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
+                await saveDB();
+                renderApp();
+                toast('✅ Respaldo automático restaurado.');
+            }
+        );
+    } catch (e) {
+        toast('⚠️ Error al leer el respaldo automático.', true);
+    }
+}
+
+async function refreshBackupStatus() {
+    const el = document.getElementById('backup-status');
+    if (!el || !isAdmin(CURRENT_USER)) return;
+    try {
+        const snap = await BACKUP_DOC.get();
+        if (!snap.exists) {
+            el.textContent = 'Respaldo automático: aún no disponible (se creará en el próximo guardado).';
+            return;
+        }
+        const data = snap.data();
+        const when = data.backedUpAt
+            ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+            : 'sin fecha';
+        const users = Object.keys(data.predictions || {}).length;
+        const filled = countFilledPredictions(data);
+        el.textContent = `Respaldo automático: ${when} · ${users} participante(s) · ${filled} marcadores guardados.`;
+    } catch (e) {
+        el.textContent = 'No se pudo consultar el respaldo automático.';
+    }
 }
 
 function adminAddUser() {
