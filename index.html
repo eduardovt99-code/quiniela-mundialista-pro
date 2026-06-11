@@ -988,12 +988,12 @@ async function loadDB() {
 
 function listenDB() {
     DB_DOC.onSnapshot((docSnap) => {
-        if (_suppressSnapshotRender) return;
         if (docSnap.exists) {
             DB = docSnap.data();
             if (DB.championLocked === undefined) {
                 DB.championLocked = !!DB.results.champion;
             }
+            if (_suppressSnapshotRender) return;
             if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
                 renderApp();
             }
@@ -1292,7 +1292,31 @@ function isGroupPredictionLocked(matchId) {
 }
 
 function hasOfficialScore(res) {
-    return res && res.a !== null && res.b !== null;
+    return res && res.a !== null && res.b !== null && res.a !== '' && res.b !== '';
+}
+
+function predVal(v) {
+    if (v === null || v === undefined || v === '') return '';
+    return String(v);
+}
+
+function hasUserPrediction(p) {
+    return predVal(p?.a) !== '' && predVal(p?.b) !== '';
+}
+
+function isGroupMatchScored(res, matchId) {
+    if (!hasOfficialScore(res)) return false;
+    if (res.finished) return true;
+    const match = GROUP_MATCHES.find(m => m.id === matchId);
+    return isMatchTimeLocked(match?.timestamp);
+}
+
+function maybeAutoFinishGroupResult(matchId) {
+    const res = DB.results.groups[matchId];
+    const match = GROUP_MATCHES.find(m => m.id === matchId);
+    if (res && hasOfficialScore(res) && isMatchTimeLocked(match?.timestamp)) {
+        res.finished = true;
+    }
 }
 
 function adminRefreshScores() {
@@ -1303,8 +1327,9 @@ function adminRefreshScores() {
 }
 
 function scoreMatch(predA, predB, realA, realB) {
-    if (predA === "" || predB === "" || realA === null || realB === null) return 0;
-    const pA = parseInt(predA), pB = parseInt(predB);
+    const pAS = predVal(predA), pBS = predVal(predB);
+    if (pAS === "" || pBS === "" || realA === null || realB === null) return 0;
+    const pA = parseInt(pAS, 10), pB = parseInt(pBS, 10);
     let pts = 0;
     if (Math.sign(pA - pB) === Math.sign(realA - realB)) {
         pts += 3;
@@ -1322,8 +1347,9 @@ function computeScore(username) {
 
     GROUP_MATCHES.forEach(m => {
         const res = DB.results.groups[m.id];
-        if (res.finished && hasOfficialScore(res)) {
-            breakdown.groups += scoreMatch(pred.groups[m.id].a, pred.groups[m.id].b, res.a, res.b);
+        if (isGroupMatchScored(res, m.id)) {
+            const g = pred.groups[m.id] || { a: '', b: '' };
+            breakdown.groups += scoreMatch(g.a, g.b, res.a, res.b);
         }
     });
 
@@ -1422,10 +1448,10 @@ function renderPredictions() {
             const isTimeLocked = isMatchTimeLocked(match.timestamp);
             const locked = res.finished || isTimeLocked;
             let realScoreHTML = '', evalHTML = '';
-            if (res.finished && hasOfficialScore(res)) {
+            if (isGroupMatchScored(res, match.id)) {
                 realScoreHTML = `<div class="w-full flex justify-center mt-2"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Final: ${res.a} - ${res.b}</div></div>`;
                 const pts = scoreMatch(p.a, p.b, res.a, res.b);
-                if (p.a !== "" && p.b !== "") {
+                if (hasUserPrediction(p)) {
                     if (pts === 5) evalHTML = `<span class="result-badge correct-score">🎯 ¡Marcador Exacto! +5 pts</span>`;
                     else if (pts === 3) evalHTML = `<span class="result-badge correct-result">✓ Resultado Correcto +3 pts</span>`;
                     else evalHTML = `<span class="result-badge incorrect">✗ Incorrecto 0 pts</span>`;
@@ -1448,9 +1474,9 @@ function renderPredictions() {
                             <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
                         </div>
                         <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                            <input type="number" data-pred="g" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
+                            <input type="number" data-pred="g" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}" ${locked ? 'disabled' : ''}/>
                             <span class="vs-divider px-0.5">VS</span>
-                            <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
+                            <input type="number" data-pred="g" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}" ${locked ? 'disabled' : ''}/>
                         </div>
                         <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
                             <span class="fi fi-${match.codeB} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
@@ -1561,7 +1587,7 @@ document.addEventListener('input', (e) => {
 // =====================================================
 function renderLeaderboard() {
     const container = document.getElementById('leaderboard-container');
-    const rows = DB.allowed.map(u => {
+    const rows = allParticipantNames().map(u => {
         const registered = !!(DB.users[u] && DB.users[u].passHash);
         return { name: u, registered, score: computeScore(u) };
     }).sort((a, b) => b.score.total - a.score.total || a.name.localeCompare(b.name));
@@ -1840,9 +1866,9 @@ function renderAdminUserPredictions() {
                     ${official}
                 </div>
                 <div class="flex items-center justify-center gap-2">
-                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${p.a}"/>
+                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}"/>
                     <span class="vs-divider">VS</span>
-                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${p.b}"/>
+                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}"/>
                 </div>
             </div>`;
         });
@@ -1868,9 +1894,9 @@ function renderAdminUserPredictions() {
                     <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
                 </div>
                 <div class="flex items-center justify-center gap-2">
-                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${p.a}"/>
+                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.a)}"/>
                     <span class="text-gray-600 font-bold">:</span>
-                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${p.b}"/>
+                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.b)}"/>
                 </div>
             </div>`;
         }
@@ -1909,6 +1935,7 @@ function adminSaveUserPrediction(t) {
     flashSaved();
     renderLeaderboard();
     updateScoreBadge(true);
+    if (CURRENT_USER === user) renderPredictions();
     if (t.dataset.apred === 'champion') {
         const attr = user.replace(/"/g, '&quot;');
         const gridSel = document.querySelector(`#admin-champions-grid select[data-apred="champion"][data-user="${attr}"]`);
@@ -1929,9 +1956,10 @@ document.addEventListener('input', (e) => {
     }
     if (t.dataset.res === 'g') {
         const res = DB.results.groups[t.dataset.match];
-        res[t.dataset.side] = t.value === '' ? null : parseInt(t.value);
+        res[t.dataset.side] = t.value === '' ? null : parseInt(t.value, 10);
+        maybeAutoFinishGroupResult(t.dataset.match);
         saveDB();
-        if (res.finished) adminRefreshScores();
+        adminRefreshScores();
     }
     if (t.dataset.res === 'ko') {
         const r = DB.results.knockout[t.dataset.match];
