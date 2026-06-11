@@ -945,6 +945,7 @@ function defaultDB() {
 }
 
 let DB = null;
+let _suppressSnapshotRender = false;
 
 async function loadDB() {
     try {
@@ -987,13 +988,14 @@ async function loadDB() {
 
 function listenDB() {
     DB_DOC.onSnapshot((docSnap) => {
+        if (_suppressSnapshotRender) return;
         if (docSnap.exists) {
             DB = docSnap.data();
             if (DB.championLocked === undefined) {
                 DB.championLocked = !!DB.results.champion;
             }
             if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
-                renderApp(); // Actualizar la UI si hay un cambio remoto
+                renderApp();
             }
         }
     });
@@ -1015,6 +1017,7 @@ function countFilledPredictions(db) {
 }
 
 async function saveDB() {
+    _suppressSnapshotRender = true;
     try {
         await DB_DOC.set(DB);
         const backup = cloneDB(DB);
@@ -1022,10 +1025,12 @@ async function saveDB() {
         await BACKUP_DOC.set(backup);
     } catch(e) {
         console.error("Error guardando en Firestore:", e);
+    } finally {
+        setTimeout(() => { _suppressSnapshotRender = false; }, 400);
     }
 }
 
-function ensurePrediction(username) {
+function ensurePrediction(username, { persist = true } = {}) {
     if (!DB.predictions[username]) {
         DB.predictions[username] = { champion: "", groups: {}, knockout: {} };
     }
@@ -1044,7 +1049,7 @@ function ensurePrediction(username) {
         }
     });
     
-    if (modified) saveDB();
+    if (modified && persist) saveDB();
     return pred;
 }
 
@@ -1346,7 +1351,7 @@ function computeScore(username) {
 // RENDER GENERAL
 // =====================================================
 function renderApp() {
-    ensurePrediction(CURRENT_USER);
+    ensurePrediction(CURRENT_USER, { persist: false });
     document.getElementById('nav-username').textContent = CURRENT_USER;
     document.getElementById('nav-avatar').textContent = CURRENT_USER.slice(0, 2).toUpperCase();
     document.getElementById('tab-admin-btn').classList.toggle('hidden', !isAdmin(CURRENT_USER));
@@ -1752,7 +1757,7 @@ function renderAdminChampionGrid() {
     const teamOptions = '<option value="">Sin elegir...</option>' +
         TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
     grid.innerHTML = participants.map(u => {
-        const pred = ensurePrediction(u);
+        const pred = ensurePrediction(u, { persist: false });
         const attrUser = u.replace(/"/g, '&quot;');
         const official = DB.results.champion
             ? (pred.champion === DB.results.champion
@@ -1770,7 +1775,7 @@ function renderAdminChampionGrid() {
         </div>`;
     }).join('');
     participants.forEach(u => {
-        const pred = ensurePrediction(u);
+        const pred = ensurePrediction(u, { persist: false });
         const sel = grid.querySelector(`select[data-apred="champion"][data-user="${u.replace(/"/g, '&quot;')}"]`);
         if (sel) sel.value = pred.champion || '';
     });
@@ -1796,7 +1801,7 @@ function renderAdminUserPredictions() {
         return;
     }
 
-    const pred = ensurePrediction(username);
+    const pred = ensurePrediction(username, { persist: false });
     const attrUser = username.replace(/"/g, '&quot;');
     const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
 
@@ -1892,7 +1897,7 @@ function renderAdminUserPredictions() {
 function adminSaveUserPrediction(t) {
     const user = t.dataset.user;
     if (!user || !allParticipantNames().includes(user)) return;
-    const pred = ensurePrediction(user);
+    const pred = ensurePrediction(user, { persist: false });
     if (t.dataset.apred === 'champion') {
         pred.champion = t.value;
     } else if (t.dataset.apred === 'g') {
@@ -1902,10 +1907,12 @@ function adminSaveUserPrediction(t) {
     }
     saveDB();
     flashSaved();
-    adminRefreshScores();
+    renderLeaderboard();
+    updateScoreBadge(true);
     if (t.dataset.apred === 'champion') {
-        const gridSel = document.querySelector(`#admin-champions-grid select[data-apred="champion"][data-user="${user.replace(/"/g, '&quot;')}"]`);
-        const detailSel = document.querySelector(`#admin-user-preds-container select[data-apred="champion"][data-user="${user.replace(/"/g, '&quot;')}"]`);
+        const attr = user.replace(/"/g, '&quot;');
+        const gridSel = document.querySelector(`#admin-champions-grid select[data-apred="champion"][data-user="${attr}"]`);
+        const detailSel = document.querySelector(`#admin-user-preds-container select[data-apred="champion"][data-user="${attr}"]`);
         if (gridSel && gridSel !== t) gridSel.value = t.value;
         if (detailSel && detailSel !== t) detailSel.value = t.value;
     }
@@ -1916,6 +1923,7 @@ document.addEventListener('input', (e) => {
     const t = e.target;
     if (!CURRENT_USER || !isAdmin(CURRENT_USER)) return;
     if (t.dataset.apred) {
+        if (t.tagName === 'SELECT') return;
         adminSaveUserPrediction(t);
         return;
     }
