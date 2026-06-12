@@ -741,6 +741,7 @@
             <h2 class="font-display font-bold text-2xl text-white mb-2">💾 Respaldo y restauración</h2>
             <p class="text-sm text-gray-400 mb-4">Cada guardado crea una copia en <code class="text-brand-goldLight">quiniela/backups_latest</code>. También puedes exportar o importar un archivo JSON.</p>
             <p class="text-xs text-gray-500 mb-4" id="backup-status"></p>
+            <div id="backup-archives-list" class="space-y-2 mb-4"></div>
             <div class="flex flex-col sm:flex-row flex-wrap gap-3">
                 <button onclick="adminExportDB()" class="btn-gold px-5 py-3 text-sm">⬇️ Exportar JSON</button>
                 <label class="btn-gold px-5 py-3 text-sm cursor-pointer text-center">
@@ -946,44 +947,110 @@ function defaultDB() {
 
 let DB = null;
 let _suppressSnapshotRender = false;
+let _dbLoadWarning = '';
+
+function backfillDBResults() {
+    if (!DB.results) DB.results = { champion: "", groups: {}, knockout: {} };
+    if (!DB.results.groups) DB.results.groups = {};
+    GROUP_MATCHES.forEach(m => {
+        if (!DB.results.groups[m.id]) DB.results.groups[m.id] = { a: null, b: null, finished: false };
+    });
+    if (!DB.results.knockout) DB.results.knockout = {};
+    ROUNDS_CONFIG.forEach(r => {
+        for (let i = 1; i <= r.matches; i++) {
+            const kid = `ko_${r.key}_${i}`;
+            if (!DB.results.knockout[kid]) {
+                DB.results.knockout[kid] = { teamA: "", teamB: "", a: null, b: null, finished: false };
+            }
+        }
+    });
+    if (DB.championLocked === undefined) {
+        DB.championLocked = !!DB.results.champion;
+    }
+}
+
+function dbRichness(data) {
+    if (!data) return { users: 0, filled: 0 };
+    const users = Math.max((data.allowed || []).length, Object.keys(data.predictions || {}).length);
+    return { users, filled: countFilledPredictions(data) };
+}
+
+function hasMeaningfulData(data) {
+    const r = dbRichness(data);
+    return r.users > 2 || r.filled > 0;
+}
+
+function isDestructiveSave(prev, next) {
+    const p = dbRichness(prev), n = dbRichness(next);
+    if (p.filled >= 3 && n.filled < Math.max(1, Math.floor(p.filled * 0.4))) return true;
+    if (p.users >= 4 && n.users < Math.max(2, Math.floor(p.users * 0.5))) return true;
+    return false;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function pruneOldArchives(keep = 20) {
+    const snap = await dbFirestore.collection('quiniela').get();
+    const archives = snap.docs
+        .filter(d => d.id.startsWith('backup_'))
+        .sort((a, b) => (b.data().archivedAt || 0) - (a.data().archivedAt || 0));
+    for (const d of archives.slice(keep)) {
+        await d.ref.delete();
+    }
+}
+
+async function archiveCurrentDB(data, reason = 'pre_save') {
+    const archiveId = 'backup_' + Date.now();
+    await dbFirestore.collection('quiniela').doc(archiveId).set({
+        ...cloneDB(data),
+        archivedAt: Date.now(),
+        archiveReason: reason,
+    });
+    await pruneOldArchives(20);
+    return archiveId;
+}
 
 async function loadDB() {
-    try {
-        const docSnap = await DB_DOC.get();
-        if (docSnap.exists) {
-            DB = docSnap.data();
-            
-            // Backfill results si hay nuevos partidos
-            if (!DB.results) DB.results = { champion: "", groups: {}, knockout: {} };
-            if (!DB.results.groups) DB.results.groups = {};
-            GROUP_MATCHES.forEach(m => {
-                if (!DB.results.groups[m.id]) DB.results.groups[m.id] = { a: null, b: null, finished: false };
-            });
-            if (!DB.results.knockout) DB.results.knockout = {};
-            ROUNDS_CONFIG.forEach(r => {
-                for (let i = 1; i <= r.matches; i++) {
-                    const kid = `ko_${r.key}_${i}`;
-                    if (!DB.results.knockout[kid]) {
-                        DB.results.knockout[kid] = { teamA: "", teamB: "", a: null, b: null, finished: false };
-                    }
-                }
-            });
-            
-            if (DB.championLocked === undefined) {
-                DB.championLocked = !!DB.results.champion;
+    _dbLoadWarning = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const docSnap = await DB_DOC.get();
+            if (docSnap.exists) {
+                DB = docSnap.data();
+                backfillDBResults();
+                listenDB();
+                return;
             }
+            break;
+        } catch (e) {
+            console.warn(`Firestore get intento ${attempt} falló`, e);
+            if (attempt < 3) await sleep(800 * attempt);
+        }
+    }
 
+    try {
+        const backupSnap = await BACKUP_DOC.get();
+        if (backupSnap.exists && hasMeaningfulData(backupSnap.data())) {
+            DB = backupSnap.data();
+            delete DB.backedUpAt;
+            backfillDBResults();
+            await saveDB({ skipArchive: true });
             listenDB();
+            _dbLoadWarning = 'Se restauró desde el respaldo automático porque v2 no respondió.';
             return;
         }
     } catch (e) {
-        console.warn('Error cargando DB de Firestore, usando DB por defecto', e);
+        console.warn('No se pudo leer backups_latest', e);
     }
-    
-    // Si no existe, inicializamos la base por defecto
+
+    // Nunca sobrescribir la nube con datos vacíos por un error de red.
     DB = defaultDB();
-    await saveDB();
+    backfillDBResults();
     listenDB();
+    _dbLoadWarning = 'No se pudo cargar la base en la nube. Los cambios NO se guardarán hasta reconectar.';
+    console.error(_dbLoadWarning);
 }
 
 function listenDB() {
@@ -1016,15 +1083,34 @@ function countFilledPredictions(db) {
     return total;
 }
 
-async function saveDB() {
+async function saveDB(opts = {}) {
+    if (_dbLoadWarning) {
+        toast('⚠️ Sin conexión a la nube. Revisa internet y recarga antes de guardar.', true);
+        return;
+    }
     _suppressSnapshotRender = true;
     try {
+        if (!opts.skipArchive) {
+            const current = await DB_DOC.get();
+            if (current.exists) {
+                const prev = current.data();
+                if (hasMeaningfulData(prev)) {
+                    if (isDestructiveSave(prev, DB) && !opts.force) {
+                        await archiveCurrentDB(prev, 'blocked_wipe');
+                        toast('⚠️ Guardado bloqueado: parece borrado masivo de datos. Exporta un JSON o restaura un respaldo archivado.', true);
+                        return;
+                    }
+                    await archiveCurrentDB(prev, 'auto');
+                }
+            }
+        }
         await DB_DOC.set(DB);
         const backup = cloneDB(DB);
         backup.backedUpAt = Date.now();
         await BACKUP_DOC.set(backup);
     } catch(e) {
         console.error("Error guardando en Firestore:", e);
+        toast('⚠️ Error al guardar en Firebase.', true);
     } finally {
         setTimeout(() => { _suppressSnapshotRender = false; }, 400);
     }
@@ -2084,7 +2170,7 @@ function adminImportDB(input) {
                 async () => {
                     DB = data;
                     if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
-                    await saveDB();
+                    await saveDB({ force: true, skipArchive: true });
                     renderApp();
                     toast('✅ Respaldo restaurado correctamente.');
                 }
@@ -2116,7 +2202,7 @@ async function adminRestoreLatestBackup() {
                 delete data.backedUpAt;
                 DB = data;
                 if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
-                await saveDB();
+                await saveDB({ force: true, skipArchive: true });
                 renderApp();
                 toast('✅ Respaldo automático restaurado.');
             }
@@ -2128,22 +2214,77 @@ async function adminRestoreLatestBackup() {
 
 async function refreshBackupStatus() {
     const el = document.getElementById('backup-status');
+    const archivesEl = document.getElementById('backup-archives-list');
     if (!el || !isAdmin(CURRENT_USER)) return;
     try {
         const snap = await BACKUP_DOC.get();
         if (!snap.exists) {
             el.textContent = 'Respaldo automático: aún no disponible (se creará en el próximo guardado).';
+        } else {
+            const data = snap.data();
+            const when = data.backedUpAt
+                ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+                : 'sin fecha';
+            const users = Object.keys(data.predictions || {}).length;
+            const filled = countFilledPredictions(data);
+            el.textContent = `Respaldo automático: ${when} · ${users} participante(s) · ${filled} marcadores guardados.`;
+        }
+
+        if (archivesEl) {
+            const all = await dbFirestore.collection('quiniela').get();
+            const archives = all.docs
+                .filter(d => d.id.startsWith('backup_'))
+                .map(d => ({ id: d.id, data: d.data() }))
+                .sort((a, b) => (b.data.archivedAt || 0) - (a.data.archivedAt || 0))
+                .slice(0, 8);
+            if (!archives.length) {
+                archivesEl.innerHTML = '<p class="text-xs text-gray-500">Respaldos archivados: ninguno aún (se crean antes de cada guardado con datos).</p>';
+            } else {
+                archivesEl.innerHTML = '<p class="text-xs text-brand-goldLight font-bold mb-2">Respaldos archivados (recientes)</p>' +
+                    archives.map(a => {
+                        const when = a.data.archivedAt
+                            ? new Date(a.data.archivedAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+                            : 'sin fecha';
+                        const r = dbRichness(a.data);
+                        return `<div class="lb-row flex flex-col sm:flex-row sm:items-center gap-2 p-3">
+                            <div class="flex-1 text-xs text-gray-400">${when} · ${r.users} participante(s) · ${r.filled} marcadores</div>
+                            <button onclick="adminRestoreArchive('${a.id}')" class="btn-outline px-3 py-1.5 text-[11px]">Restaurar</button>
+                        </div>`;
+                    }).join('');
+            }
+        }
+    } catch (e) {
+        el.textContent = 'No se pudo consultar el respaldo automático.';
+    }
+}
+
+async function adminRestoreArchive(archiveId) {
+    try {
+        const snap = await dbFirestore.collection('quiniela').doc(archiveId).get();
+        if (!snap.exists) {
+            toast('⚠️ Respaldo archivado no encontrado.', true);
             return;
         }
         const data = snap.data();
-        const when = data.backedUpAt
-            ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
-            : 'sin fecha';
-        const users = Object.keys(data.predictions || {}).length;
-        const filled = countFilledPredictions(data);
-        el.textContent = `Respaldo automático: ${when} · ${users} participante(s) · ${filled} marcadores guardados.`;
+        const r = dbRichness(data);
+        const when = data.archivedAt
+            ? new Date(data.archivedAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+            : 'fecha desconocida';
+        askConfirm(
+            'Restaurar respaldo archivado',
+            `Restaurar copia del ${when} (${r.users} participantes, ${r.filled} marcadores). ¿Continuar?`,
+            async () => {
+                delete data.archivedAt;
+                delete data.archiveReason;
+                DB = data;
+                backfillDBResults();
+                await saveDB({ force: true, skipArchive: true });
+                renderApp();
+                toast('✅ Respaldo archivado restaurado.');
+            }
+        );
     } catch (e) {
-        el.textContent = 'No se pudo consultar el respaldo automático.';
+        toast('⚠️ Error al restaurar respaldo archivado.', true);
     }
 }
 
@@ -2230,6 +2371,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await loadDB();
     loginCard.innerHTML = originalLoginHTML;
+    if (_dbLoadWarning) {
+        toast('⚠️ ' + _dbLoadWarning, true);
+    }
 
     // Enter para avanzar en login
     document.getElementById('login-username').addEventListener('keydown', e => { if (e.key === 'Enter') loginContinue(); });
