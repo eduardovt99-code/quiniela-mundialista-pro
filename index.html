@@ -700,10 +700,11 @@
 
         <!-- Resultados grupos -->
         <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.05s">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <h2 class="font-display font-bold text-2xl text-white">📋 Resultados · Fase de Grupos</h2>
-                <span class="pts-chip">Cierra el partido al iniciar; captura el marcador después</span>
+                <button onclick="syncOfficialResultsFromFeed({ force: true })" class="btn-gold px-4 py-2 text-xs">🔄 Sincronizar marcadores</button>
             </div>
+            <p class="text-xs text-gray-500 mb-4" id="results-sync-status">Los marcadores oficiales se actualizan solos cada 15 min cuando ya se jugó el partido.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="admin-groups-container"></div>
         </section>
 
@@ -1516,6 +1517,113 @@ function maybeAutoFinishGroupResult(matchId) {
     }
 }
 
+const OFFICIAL_RESULTS_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+const API_TEAM_TO_APP = {
+    'Mexico': 'México', 'South Africa': 'Sudáfrica', 'South Korea': 'República de Corea',
+    'Czech Republic': 'Chequia', 'Canada': 'Canadá', 'Bosnia & Herzegovina': 'Bosnia y Herzegovina',
+    'Qatar': 'Catar', 'Switzerland': 'Suiza', 'Brazil': 'Brasil', 'Morocco': 'Marruecos',
+    'Haiti': 'Haití', 'Scotland': 'Escocia', 'USA': 'Estados Unidos', 'Paraguay': 'Paraguay',
+    'Australia': 'Australia', 'Turkey': 'Turquía', 'Germany': 'Alemania', 'Curaçao': 'Curaçao',
+    'Ivory Coast': 'Costa de Marfil', 'Ecuador': 'Ecuador', 'Netherlands': 'Países Bajos',
+    'Japan': 'Japón', 'Sweden': 'Suecia', 'Tunisia': 'Túnez', 'Belgium': 'Bélgica',
+    'Egypt': 'Egipto', 'Iran': 'Irán', 'New Zealand': 'Nueva Zelanda', 'Spain': 'España',
+    'Cape Verde': 'Cabo Verde', 'Saudi Arabia': 'Arabia Saudita', 'Uruguay': 'Uruguay',
+    'France': 'Francia', 'Senegal': 'Senegal', 'Iraq': 'Irak', 'Norway': 'Noruega',
+    'Argentina': 'Argentina', 'Algeria': 'Argelia', 'Austria': 'Austria', 'Jordan': 'Jordania',
+    'Portugal': 'Portugal', 'DR Congo': 'RD Congo', 'Uzbekistan': 'Uzbekistán', 'Colombia': 'Colombia',
+    'England': 'Inglaterra', 'Croatia': 'Croacia', 'Ghana': 'Ghana', 'Panama': 'Panamá'
+};
+
+let _lastResultsSync = 0;
+let _resultsSyncRunning = false;
+
+function mapApiTeam(name) {
+    return API_TEAM_TO_APP[name] || name;
+}
+
+function matchPairKey(t1, t2) {
+    return [t1, t2].sort().join('|');
+}
+
+function updateResultsSyncStatus(msg) {
+    const el = document.getElementById('results-sync-status');
+    if (el) el.textContent = msg;
+}
+
+async function syncOfficialResultsFromFeed({ force = false, silent = false } = {}) {
+    if (!DB?.results?.groups || _resultsSyncRunning) return false;
+    const now = Date.now();
+    if (!force && now - _lastResultsSync < 15 * 60 * 1000) return false;
+
+    _resultsSyncRunning = true;
+    try {
+        const resp = await fetch(OFFICIAL_RESULTS_URL, { cache: 'no-store' });
+        if (!resp.ok) throw new Error('feed HTTP ' + resp.status);
+        const data = await resp.json();
+
+        const feedByPair = new Map();
+        for (const m of data.matches || []) {
+            if (!m.score?.ft || m.score.ft.length < 2) continue;
+            const t1 = mapApiTeam(m.team1);
+            const t2 = mapApiTeam(m.team2);
+            feedByPair.set(matchPairKey(t1, t2), {
+                t1, t2,
+                a: parseInt(m.score.ft[0], 10),
+                b: parseInt(m.score.ft[1], 10)
+            });
+        }
+
+        let changed = 0;
+        for (const gm of GROUP_MATCHES) {
+            const feed = feedByPair.get(matchPairKey(gm.teamA, gm.teamB));
+            if (!feed) continue;
+
+            const res = DB.results.groups[gm.id];
+            if (!res) continue;
+
+            let a, b;
+            if (feed.t1 === gm.teamA) {
+                a = feed.a; b = feed.b;
+            } else {
+                a = feed.b; b = feed.a;
+            }
+
+            if (res.a === a && res.b === b && res.finished) continue;
+            res.a = a;
+            res.b = b;
+            res.finished = true;
+            changed++;
+        }
+
+        _lastResultsSync = Date.now();
+        const when = new Date(_lastResultsSync).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+
+        if (changed > 0) {
+            await saveDB();
+            adminRefreshScores();
+            updateResultsSyncStatus(`Última sync: ${when} · ${changed} marcador(es) actualizado(s) automáticamente.`);
+            if (!silent) toast(`✅ ${changed} resultado(s) oficial(es) sincronizado(s).`);
+            return true;
+        }
+
+        updateResultsSyncStatus(`Última sync: ${when} · sin cambios nuevos (${feedByPair.size} partidos con marcador en la fuente).`);
+        if (force && !silent) toast('ℹ️ No hay marcadores nuevos que sincronizar.');
+        return false;
+    } catch (e) {
+        console.warn('Sync de resultados falló', e);
+        updateResultsSyncStatus('No se pudo sincronizar marcadores. Reintenta con el botón 🔄.');
+        if (force && !silent) toast('⚠️ No se pudieron obtener los marcadores automáticos.', true);
+        return false;
+    } finally {
+        _resultsSyncRunning = false;
+    }
+}
+
+function maybeSyncOfficialResults(force = false) {
+    if (!DB) return;
+    syncOfficialResultsFromFeed({ force, silent: true });
+}
+
 function adminRefreshScores() {
     renderPredictions();
     renderLeaderboard();
@@ -1583,6 +1691,7 @@ function renderApp() {
     renderLeaderboard();
     if (isAdmin(CURRENT_USER)) renderAdmin();
     updateScoreBadge();
+    maybeSyncOfficialResults();
 }
 
 function updateScoreBadge(animate = false) {
@@ -1967,6 +2076,7 @@ function renderAdmin() {
     renderAdminUserPredictions();
 
     refreshBackupStatus();
+    updateResultsSyncStatus(document.getElementById('results-sync-status')?.textContent || 'Los marcadores oficiales se actualizan solos cada 15 min.');
 }
 
 function renderAdminChampionGrid() {
@@ -2546,8 +2656,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 60000);
 
     document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && CURRENT_USER) renderPredictions();
+        if (!document.hidden && CURRENT_USER) {
+            renderPredictions();
+            maybeSyncOfficialResults(true);
+        }
     });
+
+    setInterval(() => {
+        if (CURRENT_USER) maybeSyncOfficialResults();
+    }, 15 * 60 * 1000);
 });
 </script>
 
