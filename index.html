@@ -739,8 +739,9 @@
         <!-- Respaldo de datos -->
         <section class="glass-card p-6 sm:p-9 animate-fade-up" style="animation-delay: 0.14s">
             <h2 class="font-display font-bold text-2xl text-white mb-2">💾 Respaldo y restauración</h2>
-            <p class="text-sm text-gray-400 mb-4">Cada guardado crea una copia en <code class="text-brand-goldLight">quiniela/backups_latest</code>. También puedes exportar o importar un archivo JSON.</p>
-            <p class="text-xs text-gray-500 mb-4" id="backup-status"></p>
+            <p class="text-sm text-gray-400 mb-4">Protección triple: copia local en este navegador, <code class="text-brand-goldLight">backups_latest</code> + <code class="text-brand-goldLight">backups_previous</code> en Firebase, y archivos históricos antes de cada guardado.</p>
+            <p class="text-xs text-gray-500 mb-2" id="backup-status"></p>
+            <p class="text-xs text-gray-500 mb-4" id="local-mirror-status"></p>
             <div id="backup-archives-list" class="space-y-2 mb-4"></div>
             <div class="flex flex-col sm:flex-row flex-wrap gap-3">
                 <button onclick="adminExportDB()" class="btn-gold px-5 py-3 text-sm">⬇️ Exportar JSON</button>
@@ -748,7 +749,9 @@
                     ⬆️ Restaurar desde JSON
                     <input type="file" accept="application/json,.json" class="hidden" onchange="adminImportDB(this)">
                 </label>
-                <button onclick="adminRestoreLatestBackup()" class="btn-gold px-5 py-3 text-sm">♻️ Usar respaldo automático</button>
+                <button onclick="adminRestoreLatestBackup()" class="btn-gold px-5 py-3 text-sm">♻️ Respaldo automático</button>
+                <button onclick="adminRestorePreviousBackup()" class="btn-gold px-5 py-3 text-sm">⏪ Respaldo anterior</button>
+                <button onclick="adminRestoreLocalMirror()" class="btn-gold px-5 py-3 text-sm">💻 Copia de este navegador</button>
             </div>
         </section>
 
@@ -920,6 +923,8 @@ if (!firebase.apps.length) {
 const dbFirestore = firebase.firestore();
 const DB_DOC = dbFirestore.collection('quiniela').doc('v2');
 const BACKUP_DOC = dbFirestore.collection('quiniela').doc('backups_latest');
+const BACKUP_PREV_DOC = dbFirestore.collection('quiniela').doc('backups_previous');
+const LOCAL_MIRROR_KEY = 'qmp_db_mirror_v2';
 const SESSION_KEY = 'qmp_session_v2';
 
 // Lista inicial de invitados — el administrador puede agregar más desde su panel.
@@ -980,11 +985,63 @@ function hasMeaningfulData(data) {
     return r.users > 2 || r.filled > 0;
 }
 
+function isLikelySeedReset(data) {
+    if (!data) return true;
+    const allowed = data.allowed || [];
+    const filled = countFilledPredictions(data);
+    const predUsers = Object.keys(data.predictions || {}).length;
+    const onlySeed = allowed.length <= 2 && allowed.every(u => SEED_ALLOWED.includes(u));
+    return onlySeed && filled === 0 && predUsers <= 2;
+}
+
+function isRicher(a, b) {
+    const ra = dbRichness(a), rb = dbRichness(b);
+    if (ra.filled !== rb.filled) return ra.filled > rb.filled;
+    return ra.users > rb.users;
+}
+
 function isDestructiveSave(prev, next) {
+    if (!prev || !next) return false;
+    if (hasMeaningfulData(prev) && isLikelySeedReset(next)) return true;
     const p = dbRichness(prev), n = dbRichness(next);
-    if (p.filled >= 3 && n.filled < Math.max(1, Math.floor(p.filled * 0.4))) return true;
-    if (p.users >= 4 && n.users < Math.max(2, Math.floor(p.users * 0.5))) return true;
+    if (p.filled >= 1 && n.filled === 0) return true;
+    if (p.filled >= 4 && n.filled < Math.floor(p.filled * 0.5)) return true;
     return false;
+}
+
+function pickRichestCandidate(candidates) {
+    const valid = candidates.filter(c => c?.data);
+    if (!valid.length) return null;
+    return valid.reduce((best, c) => isRicher(c.data, best.data) ? c : best);
+}
+
+function saveLocalMirror(data) {
+    try {
+        const payload = cloneDB(data);
+        payload.mirroredAt = Date.now();
+        localStorage.setItem(LOCAL_MIRROR_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.warn('No se pudo guardar copia local', e);
+    }
+}
+
+function loadLocalMirror() {
+    try {
+        const raw = localStorage.getItem(LOCAL_MIRROR_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+function stripMetaFields(data) {
+    if (!data) return data;
+    delete data.backedUpAt;
+    delete data.archivedAt;
+    delete data.archiveReason;
+    delete data.mirroredAt;
+    return data;
 }
 
 function sleep(ms) {
@@ -1012,40 +1069,54 @@ async function archiveCurrentDB(data, reason = 'pre_save') {
     return archiveId;
 }
 
-async function loadDB() {
-    _dbLoadWarning = '';
+async function fetchCloudCandidates() {
+    const candidates = [];
+    const local = loadLocalMirror();
+    if (local) {
+        const copy = cloneDB(local);
+        stripMetaFields(copy);
+        candidates.push({ name: 'copia local', data: copy });
+    }
+
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-            const docSnap = await DB_DOC.get();
-            if (docSnap.exists) {
-                DB = docSnap.data();
-                backfillDBResults();
-                listenDB();
-                return;
-            }
-            break;
+            const [main, latest, previous] = await Promise.all([
+                DB_DOC.get(),
+                BACKUP_DOC.get(),
+                BACKUP_PREV_DOC.get(),
+            ]);
+            if (main.exists) candidates.push({ name: 'v2', data: cloneDB(main.data()) });
+            if (latest.exists) candidates.push({ name: 'backups_latest', data: cloneDB(latest.data()) });
+            if (previous.exists) candidates.push({ name: 'backups_previous', data: cloneDB(previous.data()) });
+            return candidates;
         } catch (e) {
             console.warn(`Firestore get intento ${attempt} falló`, e);
             if (attempt < 3) await sleep(800 * attempt);
         }
     }
+    return candidates;
+}
 
-    try {
-        const backupSnap = await BACKUP_DOC.get();
-        if (backupSnap.exists && hasMeaningfulData(backupSnap.data())) {
-            DB = backupSnap.data();
-            delete DB.backedUpAt;
-            backfillDBResults();
-            await saveDB({ skipArchive: true });
-            listenDB();
-            _dbLoadWarning = 'Se restauró desde el respaldo automático porque v2 no respondió.';
-            return;
+async function loadDB() {
+    _dbLoadWarning = '';
+    const candidates = await fetchCloudCandidates();
+    const best = pickRichestCandidate(candidates);
+
+    if (best) {
+        DB = best.data;
+        stripMetaFields(DB);
+        backfillDBResults();
+        saveLocalMirror(DB);
+
+        const cloudV2 = candidates.find(c => c.name === 'v2');
+        if (cloudV2 && isDestructiveSave(cloudV2.data, DB) && hasMeaningfulData(DB)) {
+            await saveDB({ force: true, skipArchive: true });
+            _dbLoadWarning = `Datos recuperados automáticamente desde ${best.name}.`;
         }
-    } catch (e) {
-        console.warn('No se pudo leer backups_latest', e);
+        listenDB();
+        return;
     }
 
-    // Nunca sobrescribir la nube con datos vacíos por un error de red.
     DB = defaultDB();
     backfillDBResults();
     listenDB();
@@ -1055,15 +1126,31 @@ async function loadDB() {
 
 function listenDB() {
     DB_DOC.onSnapshot((docSnap) => {
-        if (docSnap.exists) {
-            DB = docSnap.data();
-            if (DB.championLocked === undefined) {
-                DB.championLocked = !!DB.results.champion;
+        if (!docSnap.exists) return;
+        const incoming = cloneDB(docSnap.data());
+        stripMetaFields(incoming);
+        const mirror = loadLocalMirror();
+        const baseline = DB || mirror || {};
+
+        if (hasMeaningfulData(baseline) && isDestructiveSave(baseline, incoming)) {
+            console.warn('Actualización remota rechazada: parece borrado masivo.');
+            if (mirror && isRicher(mirror, incoming) && isRicher(mirror, DB)) {
+                DB = cloneDB(mirror);
+                backfillDBResults();
             }
-            if (_suppressSnapshotRender) return;
-            if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
-                renderApp();
-            }
+            toast('⚠️ Se bloqueó una actualización que borraba datos. Revisa Respaldo y restauración.', true);
+            if (CURRENT_USER && isAdmin(CURRENT_USER)) refreshBackupStatus();
+            return;
+        }
+
+        DB = incoming;
+        if (DB.championLocked === undefined) {
+            DB.championLocked = !!DB.results.champion;
+        }
+        saveLocalMirror(DB);
+        if (_suppressSnapshotRender) return;
+        if (CURRENT_USER && document.getElementById('view-app').classList.contains('hidden') === false) {
+            renderApp();
         }
     });
 }
@@ -1085,32 +1172,56 @@ function countFilledPredictions(db) {
 
 async function saveDB(opts = {}) {
     if (_dbLoadWarning) {
-        toast('⚠️ Sin conexión a la nube. Revisa internet y recarga antes de guardar.', true);
-        return;
+        saveLocalMirror(DB);
+        toast('⚠️ Sin conexión a la nube. Se guardó copia local; recarga cuando tengas internet.', true);
+        return false;
     }
     _suppressSnapshotRender = true;
     try {
-        if (!opts.skipArchive) {
-            const current = await DB_DOC.get();
-            if (current.exists) {
-                const prev = current.data();
-                if (hasMeaningfulData(prev)) {
-                    if (isDestructiveSave(prev, DB) && !opts.force) {
-                        await archiveCurrentDB(prev, 'blocked_wipe');
-                        toast('⚠️ Guardado bloqueado: parece borrado masivo de datos. Exporta un JSON o restaura un respaldo archivado.', true);
-                        return;
-                    }
-                    await archiveCurrentDB(prev, 'auto');
-                }
-            }
+        const current = await DB_DOC.get();
+        const prev = current.exists ? current.data() : null;
+        const mirror = loadLocalMirror();
+        const guardBase = pickRichestCandidate(
+            [{ name: 'v2', data: prev }, { name: 'local', data: mirror }].filter(c => c.data)
+        )?.data;
+
+        if (!opts.force && guardBase && isDestructiveSave(guardBase, DB)) {
+            await archiveCurrentDB(guardBase, 'blocked_wipe');
+            DB = cloneDB(guardBase);
+            stripMetaFields(DB);
+            backfillDBResults();
+            saveLocalMirror(DB);
+            toast('⚠️ Guardado bloqueado: intento de borrar datos. Se restauró la última versión buena.', true);
+            if (CURRENT_USER) renderApp();
+            return false;
         }
+
+        if (!opts.skipArchive && prev && hasMeaningfulData(prev)) {
+            await archiveCurrentDB(prev, 'auto');
+        }
+
         await DB_DOC.set(DB);
+        saveLocalMirror(DB);
+
         const backup = cloneDB(DB);
         backup.backedUpAt = Date.now();
-        await BACKUP_DOC.set(backup);
+        const [latestSnap, prevSnap] = await Promise.all([BACKUP_DOC.get(), BACKUP_PREV_DOC.get()]);
+
+        if (!latestSnap.exists || opts.force || !isDestructiveSave(latestSnap.data(), DB)) {
+            if (latestSnap.exists && !isDestructiveSave(latestSnap.data(), DB)) {
+                const prevPayload = cloneDB(latestSnap.data());
+                prevPayload.backedUpAt = prevPayload.backedUpAt || Date.now();
+                await BACKUP_PREV_DOC.set(prevPayload);
+            }
+            await BACKUP_DOC.set(backup);
+        }
+
+        return true;
     } catch(e) {
         console.error("Error guardando en Firestore:", e);
-        toast('⚠️ Error al guardar en Firebase.', true);
+        saveLocalMirror(DB);
+        toast('⚠️ Error al guardar en Firebase. Copia local actualizada.', true);
+        return false;
     } finally {
         setTimeout(() => { _suppressSnapshotRender = false; }, 400);
     }
@@ -2182,6 +2293,28 @@ function adminImportDB(input) {
     reader.readAsText(file);
 }
 
+function confirmRestoreData(data, title) {
+    stripMetaFields(data);
+    const r = dbRichness(data);
+    const users = Object.keys(data.predictions || {}).join(', ') || 'sin pronósticos';
+    const when = data.backedUpAt || data.mirroredAt || data.archivedAt;
+    const whenLabel = when
+        ? new Date(when).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+        : 'fecha desconocida';
+    askConfirm(
+        title,
+        `${whenLabel}. Participantes: ${users}. Marcadores llenos: ${r.filled}. ¿Restaurar?`,
+        async () => {
+            DB = cloneDB(data);
+            backfillDBResults();
+            if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
+            await saveDB({ force: true, skipArchive: true });
+            renderApp();
+            toast('✅ Datos restaurados correctamente.');
+        }
+    );
+}
+
 async function adminRestoreLatestBackup() {
     try {
         const snap = await BACKUP_DOC.get();
@@ -2189,45 +2322,73 @@ async function adminRestoreLatestBackup() {
             toast('⚠️ Aún no hay respaldo automático guardado.', true);
             return;
         }
-        const data = snap.data();
-        const users = Object.keys(data.predictions || {}).join(', ') || 'sin pronósticos';
-        const filled = countFilledPredictions(data);
-        const when = data.backedUpAt
-            ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
-            : 'fecha desconocida';
-        askConfirm(
-            'Restaurar respaldo automático',
-            `Respaldo del ${when}. Participantes: ${users}. Marcadores llenos: ${filled}. ¿Restaurar?`,
-            async () => {
-                delete data.backedUpAt;
-                DB = data;
-                if (DB.championLocked === undefined) DB.championLocked = !!DB.results?.champion;
-                await saveDB({ force: true, skipArchive: true });
-                renderApp();
-                toast('✅ Respaldo automático restaurado.');
-            }
-        );
+        confirmRestoreData(snap.data(), 'Restaurar respaldo automático');
     } catch (e) {
         toast('⚠️ Error al leer el respaldo automático.', true);
     }
 }
 
+async function adminRestorePreviousBackup() {
+    try {
+        const snap = await BACKUP_PREV_DOC.get();
+        if (!snap.exists) {
+            toast('⚠️ Aún no hay respaldo anterior guardado.', true);
+            return;
+        }
+        confirmRestoreData(snap.data(), 'Restaurar respaldo anterior');
+    } catch (e) {
+        toast('⚠️ Error al leer el respaldo anterior.', true);
+    }
+}
+
+function adminRestoreLocalMirror() {
+    const data = loadLocalMirror();
+    if (!data || !hasMeaningfulData(data)) {
+        toast('⚠️ No hay copia local con datos en este navegador.', true);
+        return;
+    }
+    confirmRestoreData(data, 'Restaurar copia local del navegador');
+}
+
 async function refreshBackupStatus() {
     const el = document.getElementById('backup-status');
+    const localEl = document.getElementById('local-mirror-status');
     const archivesEl = document.getElementById('backup-archives-list');
     if (!el || !isAdmin(CURRENT_USER)) return;
     try {
-        const snap = await BACKUP_DOC.get();
-        if (!snap.exists) {
-            el.textContent = 'Respaldo automático: aún no disponible (se creará en el próximo guardado).';
-        } else {
-            const data = snap.data();
+        const [latestSnap, prevSnap] = await Promise.all([BACKUP_DOC.get(), BACKUP_PREV_DOC.get()]);
+        const parts = [];
+        if (latestSnap.exists) {
+            const data = latestSnap.data();
             const when = data.backedUpAt
                 ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
                 : 'sin fecha';
-            const users = Object.keys(data.predictions || {}).length;
-            const filled = countFilledPredictions(data);
-            el.textContent = `Respaldo automático: ${when} · ${users} participante(s) · ${filled} marcadores guardados.`;
+            const r = dbRichness(data);
+            parts.push(`Último: ${when} · ${r.users} participante(s) · ${r.filled} marcadores`);
+        } else {
+            parts.push('Último: no disponible aún');
+        }
+        if (prevSnap.exists) {
+            const data = prevSnap.data();
+            const when = data.backedUpAt
+                ? new Date(data.backedUpAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+                : 'sin fecha';
+            const r = dbRichness(data);
+            parts.push(`Anterior: ${when} · ${r.users} participante(s) · ${r.filled} marcadores`);
+        }
+        el.textContent = parts.join(' | ');
+
+        if (localEl) {
+            const local = loadLocalMirror();
+            if (!local) {
+                localEl.textContent = 'Copia local del navegador: no disponible aún.';
+            } else {
+                const when = local.mirroredAt
+                    ? new Date(local.mirroredAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
+                    : 'sin fecha';
+                const r = dbRichness(local);
+                localEl.textContent = `Copia local del navegador: ${when} · ${r.users} participante(s) · ${r.filled} marcadores`;
+            }
         }
 
         if (archivesEl) {
@@ -2270,19 +2431,7 @@ async function adminRestoreArchive(archiveId) {
         const when = data.archivedAt
             ? new Date(data.archivedAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })
             : 'fecha desconocida';
-        askConfirm(
-            'Restaurar respaldo archivado',
-            `Restaurar copia del ${when} (${r.users} participantes, ${r.filled} marcadores). ¿Continuar?`,
-            async () => {
-                delete data.archivedAt;
-                delete data.archiveReason;
-                DB = data;
-                backfillDBResults();
-                await saveDB({ force: true, skipArchive: true });
-                renderApp();
-                toast('✅ Respaldo archivado restaurado.');
-            }
-        );
+        confirmRestoreData(data, 'Restaurar respaldo archivado');
     } catch (e) {
         toast('⚠️ Error al restaurar respaldo archivado.', true);
     }
