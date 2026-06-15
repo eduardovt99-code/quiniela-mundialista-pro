@@ -563,6 +563,7 @@
             <div class="flex gap-6 border-t border-white/5 overflow-x-auto">
                 <button class="tab-btn active" data-tab="predicciones" onclick="switchTab('predicciones')">⚽ Mis Pronósticos</button>
                 <button class="tab-btn" data-tab="posiciones" onclick="switchTab('posiciones')">🏆 Posiciones</button>
+                <button class="tab-btn" data-tab="comunidad" onclick="switchTab('comunidad')">👥 Comunidad</button>
                 <button class="tab-btn hidden" id="tab-admin-btn" data-tab="admin" onclick="switchTab('admin')">🛡️ Administración</button>
             </div>
         </div>
@@ -649,6 +650,31 @@
                 </div>
             </div>
             <div class="space-y-12" id="knockout-container"></div>
+        </section>
+    </div>
+
+
+    <!-- ====== TAB: COMUNIDAD ====== -->
+    <div id="tab-comunidad" class="tab-panel hidden max-w-5xl mx-auto px-4 sm:px-6 pt-10 space-y-10">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 animate-fade-up">
+            <div>
+                <h1 class="font-display font-black text-3xl sm:text-4xl text-white">Comunidad</h1>
+                <p class="text-sm text-gray-400 mt-1.5">Mira los pronósticos de los demás jugadores. Para evitar copias, solo se revelan 15 minutos antes de arrancar cada partido.</p>
+            </div>
+        </div>
+
+        <section class="glass-card p-6 sm:p-9 animate-fade-up">
+            <h2 class="font-display font-bold text-2xl text-white mb-6">Fase de Grupos</h2>
+            <div id="comunidad-groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Se inyecta por JS -->
+            </div>
+        </section>
+
+        <section class="glass-card p-6 sm:p-9 animate-fade-up mt-10">
+            <h2 class="font-display font-bold text-2xl text-white mb-6">Eliminatorias</h2>
+            <div id="comunidad-knockout-container" class="space-y-12">
+                <!-- Se inyecta por JS -->
+            </div>
         </section>
     </div>
 
@@ -1712,6 +1738,7 @@ function switchTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
     document.getElementById('tab-' + name).classList.remove('hidden');
     if (name === 'posiciones') renderLeaderboard();
+    if (name === 'comunidad') renderComunidad();
     if (name === 'admin') renderAdmin();
     window.scrollTo({ top: 0 });
 }
@@ -1887,6 +1914,151 @@ document.addEventListener('input', (e) => {
         return;
     }
 });
+
+
+// =====================================================
+// RENDER: COMUNIDAD
+// =====================================================
+function renderComunidad() {
+    const groupCont = document.getElementById('comunidad-groups-container');
+    const koCont = document.getElementById('comunidad-knockout-container');
+    if (!groupCont || !koCont) return;
+
+    // 1. Grupos
+    let gHtml = '';
+    GROUP_MATCHES.forEach(match => {
+        const isVisible = Date.now() >= (match.timestamp - 15 * 60 * 1000);
+        
+        gHtml += `
+        <div class="match-card flex flex-col p-4 sm:p-5">
+            <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-white/5">
+                <span class="text-[10px] sm:text-xs text-gray-400 font-semibold tracking-wide uppercase">
+                    📅 ${formatMatchDateTimeMX(match.timestamp)}
+                </span>
+            </div>
+            
+            <div class="flex items-center justify-between gap-2 relative">
+                <div class="flex flex-col items-center gap-2 flex-1">
+                    <span class="fi fi-${match.codeA} text-2xl drop-shadow-md rounded-sm"></span>
+                    <span class="text-xs font-bold text-gray-300 text-center leading-tight line-clamp-2">${match.teamA}</span>
+                </div>
+                <div class="text-xs font-bold text-gray-500 uppercase px-2">VS</div>
+                <div class="flex flex-col items-center gap-2 flex-1">
+                    <span class="fi fi-${match.codeB} text-2xl drop-shadow-md rounded-sm"></span>
+                    <span class="text-xs font-bold text-gray-300 text-center leading-tight line-clamp-2">${match.teamB}</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-white/5">
+        `;
+        
+        if (isVisible) {
+            let hasPreds = false;
+            let listHtml = '<div class="space-y-1.5">';
+            (DB.allowed || []).forEach(user => {
+                const p = DB.predictions[user]?.groups?.[match.id];
+                if (p && p.a !== null && p.b !== null && p.a !== "" && p.b !== "") {
+                    hasPreds = true;
+                    listHtml += `
+                    <div class="flex justify-between items-center bg-white/5 rounded-md px-3 py-1.5">
+                        <span class="text-xs text-gray-300 font-medium truncate pr-2">${user}</span>
+                        <div class="flex gap-2 text-xs font-bold">
+                            <span class="text-brand-gold">${p.a}</span>
+                            <span class="text-gray-500">-</span>
+                            <span class="text-brand-gold">${p.b}</span>
+                        </div>
+                    </div>`;
+                }
+            });
+            if (!hasPreds) listHtml += `<div class="text-xs text-gray-500 text-center py-2">Sin pronósticos.</div>`;
+            listHtml += '</div>';
+            gHtml += listHtml;
+        } else {
+            gHtml += `
+            <div class="flex flex-col items-center justify-center py-3 bg-white/5 rounded-lg border border-white/5">
+                <span class="text-[10px] uppercase font-bold text-brand-gold/80 flex items-center gap-1">
+                    🔒 Oculto (Faltan > 15m)
+                </span>
+            </div>`;
+        }
+        
+        gHtml += `</div></div>`;
+    });
+    groupCont.innerHTML = gHtml;
+
+    // 2. Knockouts
+    let kHtml = '';
+    ROUNDS_CONFIG.forEach(round => {
+        kHtml += `<div class="mb-8">
+            <h3 class="font-display font-bold text-lg text-brand-gold/90 uppercase tracking-widest mb-4">${round.title}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+            
+        for (let i = 1; i <= round.matches; i++) {
+            const matchId = `ko_${round.key}_${i}`;
+            const res = DB.results.knockout[matchId] || { teamA: "", teamB: "", timestamp: 0 };
+            
+            // For knockout matches, time is unknown unless set, so we check if res.timestamp exists
+            // If it doesn't exist, we just say 'Oculto' or if the match teams are unknown.
+            let isVisible = false;
+            let timeStr = '⏰ Horario por definir';
+            if (res.timestamp) {
+                isVisible = Date.now() >= (res.timestamp - 15 * 60 * 1000);
+                timeStr = `📅 ${formatMatchDateTimeMX(res.timestamp)}`;
+            }
+            
+            const nameA = res.teamA || `Ganador ${i}`;
+            const nameB = res.teamB || `Ganador ${i+1}`;
+            
+            kHtml += `
+            <div class="match-card flex flex-col p-4 sm:p-5">
+                <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-white/5">
+                    <span class="text-[10px] sm:text-xs text-gray-400 font-semibold tracking-wide uppercase">${timeStr}</span>
+                </div>
+                <div class="flex items-center justify-between gap-2 relative">
+                    <span class="text-xs font-bold text-gray-300 text-center leading-tight line-clamp-2 flex-1">${nameA}</span>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase px-1">VS</span>
+                    <span class="text-xs font-bold text-gray-300 text-center leading-tight line-clamp-2 flex-1">${nameB}</span>
+                </div>
+                <div class="mt-4 pt-3 border-t border-white/5">`;
+                
+            if (isVisible) {
+                let hasPreds = false;
+                let listHtml = '<div class="space-y-1.5">';
+                (DB.allowed || []).forEach(user => {
+                    const p = DB.predictions[user]?.knockout?.[matchId];
+                    if (p && p.a !== null && p.b !== null && p.a !== "" && p.b !== "") {
+                        hasPreds = true;
+                        const ptA = p.teamA || nameA;
+                        const ptB = p.teamB || nameB;
+                        listHtml += `
+                        <div class="flex flex-col bg-white/5 rounded-md px-3 py-1.5 mb-1.5">
+                            <span class="text-[10px] text-gray-400 font-medium truncate mb-0.5">${user}</span>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] text-gray-300 truncate w-1/3">${ptA}</span>
+                                <div class="flex gap-1 text-[11px] font-bold">
+                                    <span class="text-brand-gold">${p.a}</span>-<span class="text-brand-gold">${p.b}</span>
+                                </div>
+                                <span class="text-[10px] text-gray-300 truncate w-1/3 text-right">${ptB}</span>
+                            </div>
+                        </div>`;
+                    }
+                });
+                if (!hasPreds) listHtml += `<div class="text-xs text-gray-500 text-center py-2">Sin pronósticos.</div>`;
+                listHtml += '</div>';
+                kHtml += listHtml;
+            } else {
+                kHtml += `
+                <div class="flex flex-col items-center justify-center py-3 bg-white/5 rounded-lg border border-white/5">
+                    <span class="text-[10px] uppercase font-bold text-brand-gold/80 flex items-center gap-1">🔒 Oculto</span>
+                </div>`;
+            }
+            kHtml += `</div></div>`;
+        }
+        kHtml += `</div></div>`;
+    });
+    koCont.innerHTML = kHtml;
+}
+
 
 // =====================================================
 // RENDER: LEADERBOARD
@@ -2653,11 +2825,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!CURRENT_USER || document.getElementById('view-app').classList.contains('hidden')) return;
         const predTab = document.getElementById('tab-predicciones');
         if (predTab && !predTab.classList.contains('hidden')) renderPredictions();
+        const comTab = document.getElementById('tab-comunidad');
+        if (comTab && !comTab.classList.contains('hidden')) renderComunidad();
     }, 60000);
 
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && CURRENT_USER) {
             renderPredictions();
+            renderComunidad();
             maybeSyncOfficialResults(true);
         }
     });
