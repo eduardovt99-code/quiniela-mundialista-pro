@@ -1916,6 +1916,7 @@ document.addEventListener('input', (e) => {
 });
 
 
+
 // =====================================================
 // RENDER: COMUNIDAD
 // =====================================================
@@ -1928,6 +1929,13 @@ function renderComunidad() {
     let gHtml = '';
     GROUP_MATCHES.forEach(match => {
         const isVisible = Date.now() >= (match.timestamp - 15 * 60 * 1000);
+        const res = DB.results.groups[match.id] || { a: null, b: null, finished: false };
+        const scored = isGroupMatchScored(res, match.id);
+        
+        let realScoreHTML = '';
+        if (scored) {
+            realScoreHTML = `<div class="w-full flex justify-center mt-3"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Resultado Oficial: ${res.a} - ${res.b}</div></div>`;
+        }
         
         gHtml += `
         <div class="match-card flex flex-col p-4 sm:p-5">
@@ -1949,6 +1957,8 @@ function renderComunidad() {
                 </div>
             </div>
             
+            ${realScoreHTML}
+            
             <div class="mt-4 pt-3 border-t border-white/5">
         `;
         
@@ -1959,13 +1969,24 @@ function renderComunidad() {
                 const p = DB.predictions[user]?.groups?.[match.id];
                 if (p && p.a !== null && p.b !== null && p.a !== "" && p.b !== "") {
                     hasPreds = true;
+                    let userEvalHtml = '';
+                    if (scored) {
+                        const pts = scoreMatch(p.a, p.b, res.a, res.b);
+                        if (pts === 5) userEvalHtml = `<span class="text-[9px] text-green-400 font-bold px-1.5 py-0.5 bg-green-400/10 rounded ml-2 whitespace-nowrap">🎯 +5 pts</span>`;
+                        else if (pts === 3) userEvalHtml = `<span class="text-[9px] text-brand-gold font-bold px-1.5 py-0.5 bg-brand-gold/10 rounded ml-2 whitespace-nowrap">✓ +3 pts</span>`;
+                        else userEvalHtml = `<span class="text-[9px] text-red-400 font-bold px-1.5 py-0.5 bg-red-400/10 rounded ml-2 whitespace-nowrap">✗ 0 pts</span>`;
+                    }
+                    
                     listHtml += `
                     <div class="flex justify-between items-center bg-white/5 rounded-md px-3 py-1.5">
                         <span class="text-xs text-gray-300 font-medium truncate pr-2">${user}</span>
-                        <div class="flex gap-2 text-xs font-bold">
-                            <span class="text-brand-gold">${p.a}</span>
-                            <span class="text-gray-500">-</span>
-                            <span class="text-brand-gold">${p.b}</span>
+                        <div class="flex items-center">
+                            <div class="flex gap-2 text-xs font-bold">
+                                <span class="text-brand-gold">${p.a}</span>
+                                <span class="text-gray-500">-</span>
+                                <span class="text-brand-gold">${p.b}</span>
+                            </div>
+                            ${userEvalHtml}
                         </div>
                     </div>`;
                 }
@@ -1997,8 +2018,6 @@ function renderComunidad() {
             const matchId = `ko_${round.key}_${i}`;
             const res = DB.results.knockout[matchId] || { teamA: "", teamB: "", timestamp: 0 };
             
-            // For knockout matches, time is unknown unless set, so we check if res.timestamp exists
-            // If it doesn't exist, we just say 'Oculto' or if the match teams are unknown.
             let isVisible = false;
             let timeStr = '⏰ Horario por definir';
             if (res.timestamp) {
@@ -2008,6 +2027,12 @@ function renderComunidad() {
             
             const nameA = res.teamA || `Ganador ${i}`;
             const nameB = res.teamB || `Ganador ${i+1}`;
+            
+            const scored = res.finished && hasOfficialScore(res);
+            let realScoreHTML = '';
+            if (scored) {
+                realScoreHTML = `<div class="w-full flex justify-center mt-3"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Resultado Oficial: ${res.a} - ${res.b}</div></div>`;
+            }
             
             kHtml += `
             <div class="match-card flex flex-col p-4 sm:p-5">
@@ -2019,6 +2044,7 @@ function renderComunidad() {
                     <span class="text-[10px] font-bold text-gray-500 uppercase px-1">VS</span>
                     <span class="text-xs font-bold text-gray-300 text-center leading-tight line-clamp-2 flex-1">${nameB}</span>
                 </div>
+                ${realScoreHTML}
                 <div class="mt-4 pt-3 border-t border-white/5">`;
                 
             if (isVisible) {
@@ -2030,9 +2056,21 @@ function renderComunidad() {
                         hasPreds = true;
                         const ptA = p.teamA || nameA;
                         const ptB = p.teamB || nameB;
+                        
+                        let userEvalHtml = '';
+                        if (scored) {
+                            const pts = scoreMatch(p.a, p.b, res.a, res.b);
+                            if (pts === 5) userEvalHtml = `<span class="text-[9px] text-green-400 font-bold px-1 py-0.5 bg-green-400/10 rounded ml-1 whitespace-nowrap">🎯 +5 pts</span>`;
+                            else if (pts === 3) userEvalHtml = `<span class="text-[9px] text-brand-gold font-bold px-1 py-0.5 bg-brand-gold/10 rounded ml-1 whitespace-nowrap">✓ +3 pts</span>`;
+                            else userEvalHtml = `<span class="text-[9px] text-red-400 font-bold px-1 py-0.5 bg-red-400/10 rounded ml-1 whitespace-nowrap">✗ 0 pts</span>`;
+                        }
+                        
                         listHtml += `
                         <div class="flex flex-col bg-white/5 rounded-md px-3 py-1.5 mb-1.5">
-                            <span class="text-[10px] text-gray-400 font-medium truncate mb-0.5">${user}</span>
+                            <div class="flex justify-between items-center mb-0.5">
+                                <span class="text-[10px] text-gray-400 font-medium truncate">${user}</span>
+                                ${userEvalHtml}
+                            </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-[10px] text-gray-300 truncate w-1/3">${ptA}</span>
                                 <div class="flex gap-1 text-[11px] font-bold">
@@ -2058,7 +2096,6 @@ function renderComunidad() {
     });
     koCont.innerHTML = kHtml;
 }
-
 
 // =====================================================
 // RENDER: LEADERBOARD
