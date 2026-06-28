@@ -972,7 +972,7 @@ function defaultDB() {
         users: {},        // username -> { passHash, createdAt }
         predictions: {},  // username -> { champion, groups, knockout }
         results,
-        knockoutUnlocked: false,
+        knockoutUnlocked: { d16: false, o: false, c: false, s: false, f: false },
         championLocked: false
     };
 }
@@ -998,6 +998,10 @@ function backfillDBResults() {
     });
     if (DB.championLocked === undefined) {
         DB.championLocked = !!DB.results.champion;
+    }
+    if (typeof DB.knockoutUnlocked !== 'object' || DB.knockoutUnlocked === null) {
+        const oldVal = !!DB.knockoutUnlocked;
+        DB.knockoutUnlocked = { d16: oldVal, o: oldVal, c: oldVal, s: oldVal, f: oldVal };
     }
 }
 
@@ -1684,21 +1688,20 @@ function computeScore(username) {
         }
     });
 
-    if (DB.knockoutUnlocked) {
-        ROUNDS_CONFIG.forEach(round => {
-            const realTeams = realTeamsInRound(round);
-            for (let i = 1; i <= round.matches; i++) {
-                const mid = `ko_${round.key}_${i}`;
-                const p = pred.knockout[mid];
-                const r = DB.results.knockout[mid];
-                if (p.teamA && realTeams.has(p.teamA)) breakdown.knockout += round.ptsTeam;
-                if (p.teamB && realTeams.has(p.teamB)) breakdown.knockout += round.ptsTeam;
-                if (r.finished && hasOfficialScore(r)) {
-                    breakdown.knockout += scoreMatch(p.a, p.b, r.a, r.b);
-                }
+    ROUNDS_CONFIG.forEach(round => {
+        if (!DB.knockoutUnlocked[round.key]) return;
+        const realTeams = realTeamsInRound(round);
+        for (let i = 1; i <= round.matches; i++) {
+            const mid = `ko_${round.key}_${i}`;
+            const p = pred.knockout[mid];
+            const r = DB.results.knockout[mid];
+            if (p.teamA && realTeams.has(p.teamA)) breakdown.knockout += round.ptsTeam;
+            if (p.teamB && realTeams.has(p.teamB)) breakdown.knockout += round.ptsTeam;
+            if (r.finished && hasOfficialScore(r)) {
+                breakdown.knockout += scoreMatch(p.a, p.b, r.a, r.b);
             }
-        });
-    }
+        }
+    });
 
     breakdown.total = breakdown.champion + breakdown.groups + breakdown.knockout;
     return breakdown;
@@ -1825,18 +1828,20 @@ function renderPredictions() {
 
     // Eliminatorias
     const lockOverlay = document.getElementById('knockout-lock');
-    lockOverlay.style.display = DB.knockoutUnlocked ? 'none' : 'flex';
+    if(lockOverlay) lockOverlay.style.display = 'none';
     const koContainer = document.getElementById('knockout-container');
-    koContainer.classList.toggle('blur-[2px]', !DB.knockoutUnlocked);
-    koContainer.classList.toggle('opacity-40', !DB.knockoutUnlocked);
+    if(koContainer) koContainer.classList.remove('blur-[2px]', 'opacity-40');
 
     const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
     let koHtml = '';
     ROUNDS_CONFIG.forEach(round => {
+        const roundLocked = !DB.knockoutUnlocked[round.key];
         koHtml += `
         <div class="relative">
             <div class="round-title mb-5">
-                <h3 class="font-display font-bold text-lg sm:text-xl text-brand-goldLight whitespace-nowrap">${round.name}</h3>
+                <h3 class="font-display font-bold text-lg sm:text-xl text-brand-goldLight whitespace-nowrap">
+                    ${round.name} ${roundLocked ? '<span class="ml-2 text-sm" title="Fase bloqueada">🔒</span>' : ''}
+                </h3>
                 <span class="pts-chip gold flex-shrink-0">+${round.ptsTeam} pts por equipo</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md md:mx-auto' : ''}">`;
@@ -1844,7 +1849,7 @@ function renderPredictions() {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid];
             const r = DB.results.knockout[mid];
-            const locked = !DB.knockoutUnlocked || r.finished;
+            const locked = roundLocked || r.finished;
             let realScoreHTML = '';
             if (r.finished && hasOfficialScore(r)) {
                 realScoreHTML = `<div class="absolute -bottom-3.5 left-1/2 transform -translate-x-1/2 real-score-badge">Final: ${r.a} - ${r.b}</div>`;
@@ -2142,7 +2147,24 @@ function renderAdmin() {
     if (!isAdmin(CURRENT_USER)) return;
 
     // Switch eliminatorias
-    document.getElementById('ko-switch').classList.toggle('on', DB.knockoutUnlocked);
+    const koSwitchEl = document.getElementById('ko-switch');
+    if(koSwitchEl && koSwitchEl.parentNode) {
+        const parent = koSwitchEl.parentNode;
+        parent.innerHTML = '';
+        let switchesHtml = '';
+        ROUNDS_CONFIG.forEach(round => {
+            const isUnlocked = DB.knockoutUnlocked[round.key];
+            switchesHtml += `
+            <div class="flex items-center justify-between gap-4 p-2 rounded bg-white/5 border border-white/5 mb-2">
+                <span class="text-sm font-semibold text-gray-200">${round.name}</span>
+                <div class="switch ${isUnlocked ? 'on' : ''}" onclick="adminToggleKnockoutRound('${round.key}')"></div>
+            </div>`;
+        });
+        parent.innerHTML = switchesHtml;
+        // Adjust the header description above
+        const headerDesc = parent.previousElementSibling?.querySelector('p');
+        if (headerDesc) headerDesc.textContent = 'Habilita las predicciones por cada ronda.';
+    }
 
     // Campeón oficial
     const champSel = document.getElementById('admin-champion');
@@ -2498,13 +2520,40 @@ document.addEventListener('change', (e) => {
 // =====================================================
 // ACCIONES ADMIN
 // =====================================================
-function adminToggleKnockout() {
-    DB.knockoutUnlocked = !DB.knockoutUnlocked;
+function adminToggleKnockoutRound(roundKey) {
+    DB.knockoutUnlocked[roundKey] = !DB.knockoutUnlocked[roundKey];
     saveDB();
     renderAdmin();
     renderPredictions();
     updateScoreBadge(true);
-    toast(DB.knockoutUnlocked ? '🔓 Eliminatorias liberadas para todos los jugadores.' : '🔒 Eliminatorias bloqueadas.');
+    const roundName = ROUNDS_CONFIG.find(r => r.key === roundKey)?.name || roundKey;
+    toast(DB.knockoutUnlocked[roundKey] ? `🔓 ${roundName} liberada para todos los jugadores.` : `🔒 ${roundName} bloqueada.`);
+}
+
+function autoAdvanceKnockout(matchId) {
+    const parts = matchId.split('_');
+    if (parts.length !== 3) return;
+    const roundKey = parts[1];
+    const matchIdx = parseInt(parts[2], 10);
+    const NEXT_ROUND = { 'd16': 'o', 'o': 'c', 'c': 's', 's': 'f' };
+    const nextRoundKey = NEXT_ROUND[roundKey];
+    if (!nextRoundKey) return;
+    
+    const r = DB.results.knockout[matchId];
+    if (!r.finished || r.a === null || r.b === null || r.a === r.b) return; // Ignore ties for auto-advance
+    
+    const winner = r.a > r.b ? r.teamA : r.teamB;
+    if (!winner) return;
+    
+    const nextMatchIdx = Math.ceil(matchIdx / 2);
+    const isTeamA = matchIdx % 2 !== 0;
+    const nextMatchId = `ko_${nextRoundKey}_${nextMatchIdx}`;
+    
+    if (isTeamA) {
+        DB.results.knockout[nextMatchId].teamA = winner;
+    } else {
+        DB.results.knockout[nextMatchId].teamB = winner;
+    }
 }
 
 function adminSetChampion(value) {
@@ -2555,10 +2604,11 @@ function adminReopenGroup(matchId) {
 function adminFinishKO(matchId) {
     const r = DB.results.knockout[matchId];
     r.finished = true;
+    autoAdvanceKnockout(matchId);
     saveDB();
     renderAdmin(); renderPredictions(); renderLeaderboard(); updateScoreBadge(true);
     toast(hasOfficialScore(r)
-        ? '✅ Partido cerrado. Puntos recalculados para todos.'
+        ? '✅ Partido cerrado. Puntos recalculados y pase automático generado.'
         : '✅ Partido cerrado. Captura equipos y marcador cuando estén listos.');
 }
 
