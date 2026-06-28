@@ -1928,10 +1928,11 @@ function renderPredictions() {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid];
+            const r = DB.results.knockout[mid];
             const selA = document.querySelector(`select[data-match="${mid}"][data-side="teamA"]`);
             const selB = document.querySelector(`select[data-match="${mid}"][data-side="teamB"]`);
-            if (selA) selA.value = p.teamA;
-            if (selB) selB.value = p.teamB;
+            if (selA) selA.value = p.teamA || r.teamA || '';
+            if (selB) selB.value = p.teamB || r.teamB || '';
         }
     });
 }
@@ -1962,7 +1963,14 @@ document.addEventListener('input', (e) => {
         return;
     }
     if (t.dataset.pred === 'ko') {
-        ensurePrediction(CURRENT_USER).knockout[t.dataset.match][t.dataset.side] = t.value;
+        const p = ensurePrediction(CURRENT_USER).knockout[t.dataset.match];
+        p[t.dataset.side] = t.value;
+        if (t.dataset.side === 'a' || t.dataset.side === 'b') {
+            const selA = document.querySelector(`select[data-match="${t.dataset.match}"][data-side="teamA"]`);
+            const selB = document.querySelector(`select[data-match="${t.dataset.match}"][data-side="teamB"]`);
+            if (selA && !p.teamA) p.teamA = selA.value;
+            if (selB && !p.teamB) p.teamB = selB.value;
+        }
         saveDB(); flashSaved(); updateScoreBadge(true);
         return;
     }
