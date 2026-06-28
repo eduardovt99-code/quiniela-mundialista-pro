@@ -1741,7 +1741,7 @@ function computeScore(username) {
         const realTeams = realTeamsInRound(round);
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid];
+            const p = pred.knockout[mid] || {};
             const r = DB.results.knockout[mid];
             if (p.teamA && realTeams.has(p.teamA)) breakdown.knockout += round.ptsTeam;
             if (p.teamB && realTeams.has(p.teamB)) breakdown.knockout += round.ptsTeam;
@@ -1895,7 +1895,7 @@ function renderPredictions() {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md md:mx-auto' : ''}">`;
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid];
+            const p = pred.knockout[mid] || {};
             const r = DB.results.knockout[mid];
             const locked = roundLocked || r.finished;
             let realScoreHTML = '';
@@ -1912,9 +1912,9 @@ function renderPredictions() {
                         <select data-pred="ko" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2.5 text-center text-sm" ${locked ? 'disabled' : ''}>${teamOptions}</select>
                     </div>
                     <div class="flex items-center gap-3 bg-black/30 px-5 py-2 rounded-xl border border-white/5">
-                        <input type="number" data-pred="ko" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${p.a}" ${locked ? 'disabled' : ''}/>
+                        <input type="number" data-pred="ko" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${predVal(p.a)}" ${locked ? 'disabled' : ''}/>
                         <span class="text-gray-600 font-bold">:</span>
-                        <input type="number" data-pred="ko" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${p.b}" ${locked ? 'disabled' : ''}/>
+                        <input type="number" data-pred="ko" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${predVal(p.b)}" ${locked ? 'disabled' : ''}/>
                     </div>
                     ${realScoreHTML}
                 </div>`;
@@ -2500,7 +2500,7 @@ function renderAdminUserPredictions() {
     ROUNDS_CONFIG.forEach(round => {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid];
+            const p = pred.knockout[mid] || {};
             const selA = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamA"]`);
             const selB = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamB"]`);
             if (selA && p) selA.value = p.teamA || '';
