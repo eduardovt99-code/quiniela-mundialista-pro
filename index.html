@@ -928,6 +928,7 @@ const ROUNDS_CONFIG = [
     { id: 'octavos', key: 'o', name: 'Octavos de Final', matches: 8, ptsTeam: 5 },
     { id: 'cuartos', key: 'c', name: 'Cuartos de Final', matches: 4, ptsTeam: 10 },
     { id: 'semis',   key: 's', name: 'Semifinal', matches: 2, ptsTeam: 15 },
+    { id: 'tercer',  key: 't', name: 'Tercer Lugar', matches: 1, ptsTeam: 15 },
     { id: 'final',   key: 'f', name: 'Gran Final', matches: 1, ptsTeam: 25 }
 ];
 
@@ -972,7 +973,7 @@ function defaultDB() {
         users: {},        // username -> { passHash, createdAt }
         predictions: {},  // username -> { champion, groups, knockout }
         results,
-        knockoutUnlocked: { d16: false, o: false, c: false, s: false, f: false },
+        knockoutUnlocked: { d16: false, o: false, c: false, s: false, t: false, f: false },
         championLocked: false
     };
 }
@@ -1001,7 +1002,9 @@ function backfillDBResults() {
     }
     if (typeof DB.knockoutUnlocked !== 'object' || DB.knockoutUnlocked === null) {
         const oldVal = !!DB.knockoutUnlocked;
-        DB.knockoutUnlocked = { d16: oldVal, o: oldVal, c: oldVal, s: oldVal, f: oldVal };
+        DB.knockoutUnlocked = { d16: oldVal, o: oldVal, c: oldVal, s: oldVal, t: oldVal, f: oldVal };
+    } else if (DB.knockoutUnlocked.t === undefined) {
+        DB.knockoutUnlocked.t = false;
     }
 }
 
@@ -1561,7 +1564,7 @@ const API_TEAM_TO_APP = {
     'France': 'Francia', 'Senegal': 'Senegal', 'Iraq': 'Irak', 'Norway': 'Noruega',
     'Argentina': 'Argentina', 'Algeria': 'Argelia', 'Austria': 'Austria', 'Jordan': 'Jordania',
     'Portugal': 'Portugal', 'DR Congo': 'RD Congo', 'Uzbekistan': 'Uzbekistán', 'Colombia': 'Colombia',
-    'England': 'Inglaterra', 'Croatia': 'Croacia', 'Ghana': 'Ghana', 'Panama': 'Panamá'
+    'England': 'Inglaterra', 'Croatia': 'Croatia', 'Ghana': 'Ghana', 'Panama': 'Panamá'
 };
 
 let _lastResultsSync = 0;
@@ -1591,8 +1594,22 @@ async function syncOfficialResultsFromFeed({ force = false, silent = false } = {
         if (!resp.ok) throw new Error('feed HTTP ' + resp.status);
         const data = await resp.json();
 
+        const API_ROUNDS = {
+            "Round of 32": "d16",
+            "Round of 16": "o",
+            "Quarter-final": "c",
+            "Semi-final": "s",
+            "Match for third place": "t",
+            "Final": "f"
+        };
+        const koMatchesByRound = { d16: [], o: [], c: [], s: [], t: [], f: [] };
+
         const feedByPair = new Map();
         for (const m of data.matches || []) {
+            const roundKey = API_ROUNDS[m.round];
+            if (roundKey) {
+                koMatchesByRound[roundKey].push(m);
+            }
             if (!m.score?.ft || m.score.ft.length < 2) continue;
             const t1 = mapApiTeam(m.team1);
             const t2 = mapApiTeam(m.team2);
@@ -1625,20 +1642,51 @@ async function syncOfficialResultsFromFeed({ force = false, silent = false } = {
             changed++;
         }
 
+        // Process Knockout Matches
+        ROUNDS_CONFIG.forEach(round => {
+            const apiMatches = koMatchesByRound[round.key];
+            if (!apiMatches || apiMatches.length === 0) return;
+            
+            for (let i = 0; i < round.matches && i < apiMatches.length; i++) {
+                const apiM = apiMatches[i];
+                const res = DB.results.knockout[`ko_${round.key}_${i+1}`];
+                if (!res) continue;
+
+                let updated = false;
+                
+                const t1 = mapApiTeam(apiM.team1);
+                const t2 = mapApiTeam(apiM.team2);
+                
+                if (TEAMS.includes(t1) && res.teamA !== t1) { res.teamA = t1; updated = true; }
+                if (TEAMS.includes(t2) && res.teamB !== t2) { res.teamB = t2; updated = true; }
+                
+                if (apiM.score?.ft?.length >= 2) {
+                    const a = parseInt(apiM.score.ft[0], 10);
+                    const b = parseInt(apiM.score.ft[1], 10);
+                    if (res.a !== a || res.b !== b || !res.finished) {
+                        res.a = a; res.b = b;
+                        res.finished = true;
+                        updated = true;
+                        autoAdvanceKnockout(`ko_${round.key}_${i+1}`);
+                    }
+                }
+                if (updated) changed++;
+            }
+        });
+
         _lastResultsSync = Date.now();
         const when = new Date(_lastResultsSync).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
 
         if (changed > 0) {
             await saveDB();
             adminRefreshScores();
-            updateResultsSyncStatus(`Última sync: ${when} · ${changed} marcador(es) actualizado(s) automáticamente.`);
-            if (!silent) toast(`✅ ${changed} resultado(s) oficial(es) sincronizado(s).`);
-            return true;
+            updateResultsSyncStatus(`Última sync: ${when} · ${changed} marcador(es) o equipo(s) actualizado(s) automáticamente.`);
+            if (!silent) toast(`✅ ${changed} resultado(s) o equipo(s) sincronizado(s).`);
+        } else {
+            updateResultsSyncStatus(`Última sync: ${when} · Sin cambios nuevos.`);
+            if (!silent) toast('ℹ️ La base de datos oficial ya está al día.');
         }
-
-        updateResultsSyncStatus(`Última sync: ${when} · sin cambios nuevos (${feedByPair.size} partidos con marcador en la fuente).`);
-        if (force && !silent) toast('ℹ️ No hay marcadores nuevos que sincronizar.');
-        return false;
+        return changed > 0;
     } catch (e) {
         console.warn('Sync de resultados falló', e);
         updateResultsSyncStatus('No se pudo sincronizar marcadores. Reintenta con el botón 🔄.');
@@ -2538,6 +2586,7 @@ function autoAdvanceKnockout(matchId) {
     if (!r.finished || r.a === null || r.b === null || r.a === r.b) return; // Ignore ties for auto-advance
     
     const winner = r.a > r.b ? r.teamA : r.teamB;
+    const loser = r.a > r.b ? r.teamB : r.teamA;
     if (!winner) return;
     
     const nextMatchIdx = Math.ceil(matchIdx / 2);
@@ -2548,6 +2597,15 @@ function autoAdvanceKnockout(matchId) {
         DB.results.knockout[nextMatchId].teamA = winner;
     } else {
         DB.results.knockout[nextMatchId].teamB = winner;
+    }
+
+    if (roundKey === 's' && loser) {
+        const thirdPlaceMatchId = `ko_t_1`;
+        if (isTeamA) {
+            DB.results.knockout[thirdPlaceMatchId].teamA = loser;
+        } else {
+            DB.results.knockout[thirdPlaceMatchId].teamB = loser;
+        }
     }
 }
 
