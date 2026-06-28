@@ -698,12 +698,12 @@
         <section class="glass-card p-6 sm:p-9 animate-fade-up">
             <h2 class="font-display font-bold text-2xl text-white mb-6">🎛️ Control del Torneo</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="match-card p-5 flex items-center justify-between gap-4">
+                <div class="match-card p-5 flex flex-col gap-3">
                     <div>
                         <h3 class="font-display font-bold text-base text-white">Liberar Eliminatorias</h3>
-                        <p class="text-xs text-gray-400 mt-1">Desbloquea la fase de octavos para todos los jugadores.</p>
+                        <p class="text-xs text-gray-400 mt-1">Habilita las predicciones por cada ronda.</p>
                     </div>
-                    <div class="switch" id="ko-switch" onclick="adminToggleKnockout()"></div>
+                    <div id="admin-ko-switches" class="space-y-2 mt-2"></div>
                 </div>
                 <div class="match-card p-5 flex flex-col gap-3">
                     <div>
@@ -2147,23 +2147,18 @@ function renderAdmin() {
     if (!isAdmin(CURRENT_USER)) return;
 
     // Switch eliminatorias
-    const koSwitchEl = document.getElementById('ko-switch');
-    if(koSwitchEl && koSwitchEl.parentNode) {
-        const parent = koSwitchEl.parentNode;
-        parent.innerHTML = '';
+    const switchesContainer = document.getElementById('admin-ko-switches');
+    if (switchesContainer) {
         let switchesHtml = '';
         ROUNDS_CONFIG.forEach(round => {
             const isUnlocked = DB.knockoutUnlocked[round.key];
             switchesHtml += `
-            <div class="flex items-center justify-between gap-4 p-2 rounded bg-white/5 border border-white/5 mb-2">
+            <div class="flex items-center justify-between gap-4 p-2 rounded bg-white/5 border border-white/5">
                 <span class="text-sm font-semibold text-gray-200">${round.name}</span>
                 <div class="switch ${isUnlocked ? 'on' : ''}" onclick="adminToggleKnockoutRound('${round.key}')"></div>
             </div>`;
         });
-        parent.innerHTML = switchesHtml;
-        // Adjust the header description above
-        const headerDesc = parent.previousElementSibling?.querySelector('p');
-        if (headerDesc) headerDesc.textContent = 'Habilita las predicciones por cada ronda.';
+        switchesContainer.innerHTML = switchesHtml;
     }
 
     // Campeón oficial
