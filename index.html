@@ -1178,6 +1178,7 @@ function listenDB() {
         }
 
         DB = incoming;
+        backfillDBResults();
         if (DB.championLocked === undefined) {
             DB.championLocked = !!DB.results.champion;
         }
@@ -1896,7 +1897,7 @@ function renderPredictions() {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid] || {};
-            const r = DB.results.knockout[mid];
+            const r = DB.results.knockout[mid] || {};
             const locked = roundLocked || r.finished;
             let realScoreHTML = '';
             if (r.finished && hasOfficialScore(r)) {
