@@ -993,7 +993,7 @@ function backfillDBResults() {
         for (let i = 1; i <= r.matches; i++) {
             const kid = `ko_${r.key}_${i}`;
             if (!DB.results.knockout[kid]) {
-                DB.results.knockout[kid] = { teamA: "", teamB: "", a: null, b: null, finished: false };
+                DB.results.knockout[kid] = { teamA: "", teamB: "", a: null, b: null, finished: false, timestamp: 0 };
             }
         }
     });
@@ -1661,6 +1661,27 @@ async function syncOfficialResultsFromFeed({ force = false, silent = false } = {
                 if (TEAMS.includes(t1) && res.teamA !== t1) { res.teamA = t1; updated = true; }
                 if (TEAMS.includes(t2) && res.teamB !== t2) { res.teamB = t2; updated = true; }
                 
+                let ts = 0;
+                if (apiM.date && apiM.time) {
+                    const timeStr = apiM.time.split(' ')[0];
+                    const offsetStr = apiM.time.split(' ')[1];
+                    let offsetHours = 0;
+                    if (offsetStr && offsetStr.startsWith('UTC')) {
+                        offsetHours = parseInt(offsetStr.replace('UTC', ''), 10) || 0;
+                    }
+                    const [yyyy, mm, dd] = apiM.date.split('-');
+                    const [hh, min] = timeStr.split(':');
+                    if (yyyy && hh) {
+                        const d = new Date(Date.UTC(yyyy, mm - 1, dd, hh, min));
+                        ts = d.getTime() - (offsetHours * 3600000);
+                    }
+                }
+                if (ts > 0 && res.timestamp !== ts) {
+                    res.timestamp = ts;
+                    updated = true;
+                }
+                
+                
                 if (apiM.score?.ft?.length >= 2) {
                     const a = parseInt(apiM.score.ft[0], 10);
                     const b = parseInt(apiM.score.ft[1], 10);
@@ -1739,13 +1760,10 @@ function computeScore(username) {
 
     ROUNDS_CONFIG.forEach(round => {
         if (!DB.knockoutUnlocked[round.key]) return;
-        const realTeams = realTeamsInRound(round);
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid] || {};
-            const r = DB.results.knockout[mid];
-            if (p.teamA && realTeams.has(p.teamA)) breakdown.knockout += round.ptsTeam;
-            if (p.teamB && realTeams.has(p.teamB)) breakdown.knockout += round.ptsTeam;
+            const r = DB.results.knockout[mid] || {};
             if (r.finished && hasOfficialScore(r)) {
                 breakdown.knockout += scoreMatch(p.a, p.b, r.a, r.b);
             }
@@ -1881,7 +1899,12 @@ function renderPredictions() {
     const koContainer = document.getElementById('knockout-container');
     if(koContainer) koContainer.classList.remove('blur-[2px]', 'opacity-40');
 
-    const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    const getTeamCode = (teamName) => {
+        if (!teamName || teamName === 'Por Definir') return 'un';
+        const code = GROUP_MATCHES.find(m => m.teamA === teamName)?.codeA || GROUP_MATCHES.find(m => m.teamB === teamName)?.codeB;
+        return code || 'un';
+    };
+
     let koHtml = '';
     ROUNDS_CONFIG.forEach(round => {
         const roundLocked = !DB.knockoutUnlocked[round.key];
@@ -1891,51 +1914,66 @@ function renderPredictions() {
                 <h3 class="font-display font-bold text-lg sm:text-xl text-brand-goldLight whitespace-nowrap">
                     ${round.name} ${roundLocked ? '<span class="ml-2 text-sm" title="Fase bloqueada">🔒</span>' : ''}
                 </h3>
-                <span class="pts-chip gold flex-shrink-0">+${round.ptsTeam} pts por equipo</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md md:mx-auto' : ''}">`;
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid] || {};
             const r = DB.results.knockout[mid] || {};
-            const locked = roundLocked || r.finished;
-            let realScoreHTML = '';
+            
+            const isTimeLocked = isMatchTimeLocked(r.timestamp);
+            const locked = roundLocked || r.finished || isTimeLocked;
+            
+            const teamA = r.teamA || "Por Definir";
+            const teamB = r.teamB || "Por Definir";
+            const codeA = getTeamCode(teamA);
+            const codeB = getTeamCode(teamB);
+
+            let realScoreHTML = '', evalHTML = '';
             if (r.finished && hasOfficialScore(r)) {
-                realScoreHTML = `<div class="absolute -bottom-3.5 left-1/2 transform -translate-x-1/2 real-score-badge">Final: ${r.a} - ${r.b}</div>`;
+                realScoreHTML = `<div class="w-full flex justify-center mt-2"><div class="real-score-badge"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>Final: ${r.a} - ${r.b}</div></div>`;
+                
+                if (p.a !== null && p.a !== '' && p.a !== undefined) {
+                    const pts = scoreMatch(p.a, p.b, r.a, r.b);
+                    if (pts === 5) evalHTML = `<span class="result-badge correct-score">🎯 ¡Marcador Exacto! +5 pts</span>`;
+                    else if (pts === 3) evalHTML = `<span class="result-badge correct-result">✓ Resultado Correcto +3 pts</span>`;
+                    else evalHTML = `<span class="result-badge incorrect">✗ Incorrecto 0 pts</span>`;
+                }
             } else if (r.finished) {
-                realScoreHTML = `<div class="absolute -bottom-3.5 left-1/2 transform -translate-x-1/2 text-[10px] text-gray-400 uppercase tracking-wider font-bold whitespace-nowrap">Resultado pendiente</div>`;
+                realScoreHTML = `<div class="w-full flex justify-center mt-2"><span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">🔒 Partido cerrado — resultado pendiente</span></div>`;
             }
+
             koHtml += `
-                <div class="match-card p-4 sm:p-5 flex flex-col items-center gap-4 relative pb-7">
-                    <div class="w-full flex items-center gap-2">
-                        <select data-pred="ko" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2.5 text-center text-sm" ${locked ? 'disabled' : ''}>${teamOptions}</select>
-                        <span class="vs-divider flex-shrink-0">VS</span>
-                        <select data-pred="ko" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2.5 text-center text-sm" ${locked ? 'disabled' : ''}>${teamOptions}</select>
-                    </div>
-                    <div class="flex items-center gap-3 bg-black/30 px-5 py-2 rounded-xl border border-white/5">
-                        <input type="number" data-pred="ko" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${predVal(p.a)}" ${locked ? 'disabled' : ''}/>
-                        <span class="text-gray-600 font-bold">:</span>
-                        <input type="number" data-pred="ko" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11 !text-lg" min="0" placeholder="–" value="${predVal(p.b)}" ${locked ? 'disabled' : ''}/>
+                <div class="match-card flex flex-col p-4 sm:p-5">
+                    ${r.timestamp ? `
+                    <div class="w-full flex flex-wrap justify-between items-center mb-3 pb-2 border-b border-white/5 gap-2">
+                        <span class="text-[10px] sm:text-xs text-gray-400 font-semibold tracking-wide uppercase">
+                            📅 ${formatMatchDateTimeMX(r.timestamp)}
+                        </span>
+                        ${!locked ? `<span class="text-[9px] text-brand-gold bg-brand-gold/10 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap">⏳ Cierra 1h antes</span>` : (isTimeLocked && !r.finished ? `<span class="text-[9px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap">🔒 Cerrado por horario</span>` : '')}
+                    </div>` : ''}
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                            <span class="fi fi-${codeA} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                            <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${teamA}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                            <input type="number" data-pred="ko" data-match="${mid}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}" ${locked ? 'disabled' : ''}/>
+                            <span class="vs-divider px-0.5">VS</span>
+                            <input type="number" data-pred="ko" data-match="${mid}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}" ${locked ? 'disabled' : ''}/>
+                        </div>
+                        <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                            <span class="fi fi-${codeB} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                            <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${teamB}</span>
+                        </div>
                     </div>
                     ${realScoreHTML}
+                    <div class="text-center w-full">${evalHTML}</div>
                 </div>`;
         }
         koHtml += `</div></div>`;
     });
     koContainer.innerHTML = koHtml;
-
-    // Restaurar selects de equipos
-    ROUNDS_CONFIG.forEach(round => {
-        for (let i = 1; i <= round.matches; i++) {
-            const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid] || {};
-            const r = DB.results.knockout[mid] || {};
-            const selA = document.querySelector(`select[data-match="${mid}"][data-side="teamA"]`);
-            const selB = document.querySelector(`select[data-match="${mid}"][data-side="teamB"]`);
-            if (selA) selA.value = p.teamA || r.teamA || '';
-            if (selB) selB.value = p.teamB || r.teamB || '';
-        }
-    });
 }
 
 // Guardado automático de pronósticos
