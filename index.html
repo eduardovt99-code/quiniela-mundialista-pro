@@ -2572,13 +2572,17 @@ document.addEventListener('change', (e) => {
 // ACCIONES ADMIN
 // =====================================================
 function adminToggleKnockoutRound(roundKey) {
-    DB.knockoutUnlocked[roundKey] = !DB.knockoutUnlocked[roundKey];
-    saveDB();
-    renderAdmin();
-    renderPredictions();
-    updateScoreBadge(true);
-    const roundName = ROUNDS_CONFIG.find(r => r.key === roundKey)?.name || roundKey;
-    toast(DB.knockoutUnlocked[roundKey] ? `🔓 ${roundName} liberada para todos los jugadores.` : `🔒 ${roundName} bloqueada.`);
+    try {
+        DB.knockoutUnlocked[roundKey] = !DB.knockoutUnlocked[roundKey];
+        saveDB();
+        renderAdmin();
+        renderPredictions();
+        updateScoreBadge(true);
+        const roundName = ROUNDS_CONFIG.find(r => r.key === roundKey)?.name || roundKey;
+        toast(DB.knockoutUnlocked[roundKey] ? `🔓 ${roundName} liberada para todos los jugadores.` : `🔒 ${roundName} bloqueada.`);
+    } catch(e) {
+        alert("Error in adminToggle: " + e.message);
+    }
 }
 
 function autoAdvanceKnockout(matchId) {
