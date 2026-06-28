@@ -1927,8 +1927,8 @@ function renderPredictions() {
     ROUNDS_CONFIG.forEach(round => {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid];
-            const r = DB.results.knockout[mid];
+            const p = pred.knockout[mid] || {};
+            const r = DB.results.knockout[mid] || {};
             const selA = document.querySelector(`select[data-match="${mid}"][data-side="teamA"]`);
             const selB = document.querySelector(`select[data-match="${mid}"][data-side="teamB"]`);
             if (selA) selA.value = p.teamA || r.teamA || '';
@@ -2316,11 +2316,11 @@ function renderAdmin() {
     ROUNDS_CONFIG.forEach(round => {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const r = DB.results.knockout[mid];
+            const r = DB.results.knockout[mid] || {};
             const selA = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamA"]`);
             const selB = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamB"]`);
-            if (selA) selA.value = r.teamA;
-            if (selB) selB.value = r.teamB;
+            if (selA) selA.value = r.teamA || '';
+            if (selB) selB.value = r.teamB || '';
         }
     });
 
