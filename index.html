@@ -1006,6 +1006,19 @@ function backfillDBResults() {
     } else if (DB.knockoutUnlocked.t === undefined) {
         DB.knockoutUnlocked.t = false;
     }
+
+    // Limpieza automática de usuarios nulos/inválidos
+    if (Array.isArray(DB.allowed)) {
+        DB.allowed = DB.allowed.filter(n => n && n !== 'null' && n !== 'undefined');
+    }
+    if (DB.users) {
+        delete DB.users['null'];
+        delete DB.users['undefined'];
+    }
+    if (DB.predictions) {
+        delete DB.predictions['null'];
+        delete DB.predictions['undefined'];
+    }
 }
 
 function dbRichness(data) {
