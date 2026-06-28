@@ -2312,23 +2312,35 @@ function renderAdmin() {
     gc.innerHTML = adminHTML;
 
     // Resultados eliminatorias
-    const teamOptions = `<option value="">Equipo...</option>` + TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+    const getTeamCode = (teamName) => {
+        if (!teamName || teamName === 'Por Definir') return 'un';
+        const code = GROUP_MATCHES.find(m => m.teamA === teamName)?.codeA || GROUP_MATCHES.find(m => m.teamB === teamName)?.codeB;
+        return code || 'un';
+    };
+
     const kc = document.getElementById('admin-knockout-container');
     kc.innerHTML = ROUNDS_CONFIG.map(round => {
         let inner = '';
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
-            const r = DB.results.knockout[mid];
+            const r = DB.results.knockout[mid] || {};
+            const teamA = r.teamA || "Por Definir";
+            const teamB = r.teamB || "Por Definir";
+            const codeA = getTeamCode(teamA);
+            const codeB = getTeamCode(teamB);
+            
             inner += `
-            <div class="match-card p-4 flex flex-col gap-3">
-                <div class="flex items-center justify-between">
+            <div class="match-card p-4 sm:p-5 flex flex-col gap-3">
+                <div class="flex items-center justify-between gap-2 mb-1">
                     <span class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Partido ${i}</span>
                     <span class="status-pill ${r.finished ? 'closed' : 'live'}">${r.finished ? (hasOfficialScore(r) ? 'Cerrado' : 'Cerrado · sin marcador') : 'Abierto'}</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select data-res="ko" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
-                    <span class="vs-divider flex-shrink-0">VS</span>
-                    <select data-res="ko" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
+                <div class="flex items-center gap-2 min-w-0 mb-3 bg-black/20 p-2 rounded-lg border border-white/5">
+                    <span class="fi fi-${codeA} text-2xl rounded-sm shadow-md"></span>
+                    <span class="font-display font-semibold text-sm truncate flex-1">${teamA}</span>
+                    <span class="vs-divider scale-75">VS</span>
+                    <span class="font-display font-semibold text-sm truncate flex-1 text-right">${teamB}</span>
+                    <span class="fi fi-${codeB} text-2xl rounded-sm shadow-md"></span>
                 </div>
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
@@ -2347,21 +2359,9 @@ function renderAdmin() {
             <div class="round-title mb-4">
                 <h3 class="font-display font-bold text-lg text-brand-goldLight whitespace-nowrap">${round.name}</h3>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ${round.id === 'final' ? 'md:grid-cols-1 md:max-w-md' : ''}">${inner}</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 ${round.id === 'final' ? 'lg:grid-cols-1 lg:max-w-md' : ''}">${inner}</div>
         </div>`;
     }).join('');
-
-    // Restaurar selects de cruces reales
-    ROUNDS_CONFIG.forEach(round => {
-        for (let i = 1; i <= round.matches; i++) {
-            const mid = `ko_${round.key}_${i}`;
-            const r = DB.results.knockout[mid] || {};
-            const selA = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamA"]`);
-            const selB = document.querySelector(`select[data-res="ko"][data-match="${mid}"][data-side="teamB"]`);
-            if (selA) selA.value = r.teamA || '';
-            if (selB) selB.value = r.teamB || '';
-        }
-    });
 
     // Usuarios
     const uc = document.getElementById('admin-users-container');
