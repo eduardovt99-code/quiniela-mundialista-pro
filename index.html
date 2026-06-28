@@ -2209,9 +2209,9 @@ function renderAdmin() {
         ROUNDS_CONFIG.forEach(round => {
             const isUnlocked = DB.knockoutUnlocked[round.key];
             switchesHtml += `
-            <div class="flex items-center justify-between gap-4 p-2 rounded bg-white/5 border border-white/5">
-                <span class="text-sm font-semibold text-gray-200">${round.name}</span>
-                <div class="switch ${isUnlocked ? 'on' : ''}" onclick="adminToggleKnockoutRound('${round.key}')"></div>
+            <div class="flex items-center justify-between gap-4 p-2 rounded bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors" onclick="adminToggleKnockoutRound('${round.key}')">
+                <span class="text-sm font-semibold text-gray-200 select-none">${round.name}</span>
+                <div class="switch ${isUnlocked ? 'on' : ''} pointer-events-none"></div>
             </div>`;
         });
         switchesContainer.innerHTML = switchesHtml;
