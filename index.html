@@ -2730,15 +2730,33 @@ function autoAdvanceKnockout(matchId) {
     if (!nextRoundKey) return;
     
     const r = DB.results.knockout[matchId];
-    if (!r.finished || r.a === null || r.b === null || r.a === r.b) return; // Ignore ties for auto-advance
+    const nextMatchIdx = Math.ceil(matchIdx / 2);
+    const isTeamA = matchIdx % 2 !== 0;
+    const nextMatchId = `ko_${nextRoundKey}_${nextMatchIdx}`;
+    
+    // Si el partido ya no está terminado o es empate (se borró el resultado), limpiar la siguiente ronda
+    if (!r.finished || r.a === null || r.b === null || r.a === r.b) {
+        if (isTeamA) {
+            DB.results.knockout[nextMatchId].teamA = null;
+        } else {
+            DB.results.knockout[nextMatchId].teamB = null;
+        }
+        
+        // Limpiar partido de 3er lugar si estamos en semifinales
+        if (roundKey === 's') {
+            const thirdPlaceMatchId = `ko_t_1`;
+            if (isTeamA) {
+                DB.results.knockout[thirdPlaceMatchId].teamA = null;
+            } else {
+                DB.results.knockout[thirdPlaceMatchId].teamB = null;
+            }
+        }
+        return; 
+    }
     
     const winner = r.a > r.b ? r.teamA : r.teamB;
     const loser = r.a > r.b ? r.teamB : r.teamA;
     if (!winner) return;
-    
-    const nextMatchIdx = Math.ceil(matchIdx / 2);
-    const isTeamA = matchIdx % 2 !== 0;
-    const nextMatchId = `ko_${nextRoundKey}_${nextMatchIdx}`;
     
     if (isTeamA) {
         DB.results.knockout[nextMatchId].teamA = winner;
