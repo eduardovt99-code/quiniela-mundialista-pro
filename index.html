@@ -2311,7 +2311,20 @@ function renderAdmin() {
     // Switch eliminatorias
     const switchesContainer = document.getElementById('admin-ko-switches');
     if (switchesContainer) {
-        let switchesHtml = '';
+        let switchesHtml = `
+            <div class="col-span-full mb-4 p-3 bg-red-900/30 border border-red-500/50 rounded text-center">
+                <p class="text-sm text-red-200 mb-2">¿Ves equipos atascados en Octavos de Final (como Canadá)? Usa este botón para limpiar la base de datos de pruebas previas.</p>
+                <button onclick="
+                    for (let id in DB.results.knockout) {
+                        if (!id.startsWith('ko_d16_')) {
+                            DB.results.knockout[id].teamA = null;
+                            DB.results.knockout[id].teamB = null;
+                        }
+                    }
+                    saveDB().then(() => { alert('¡Base de datos limpiada! Recargando...'); location.reload(); });
+                " class="btn-gold px-4 py-2 text-xs">Limpiar Octavos en adelante</button>
+            </div>
+        `;
         ROUNDS_CONFIG.forEach(round => {
             const isUnlocked = DB.knockoutUnlocked[round.key];
             switchesHtml += `
