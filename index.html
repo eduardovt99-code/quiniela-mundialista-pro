@@ -2582,6 +2582,12 @@ function renderAdminUserPredictions() {
     });
     html += `</div>`;
 
+    const getTeamCode = (teamName) => {
+        if (!teamName || teamName === 'Por Definir') return 'un';
+        const code = GROUP_MATCHES.find(m => m.teamA === teamName)?.codeA || GROUP_MATCHES.find(m => m.teamB === teamName)?.codeB;
+        return code || 'un';
+    };
+
     html += `<div class="mt-8 space-y-8">`;
     ROUNDS_CONFIG.forEach(round => {
         html += `
@@ -2594,28 +2600,35 @@ function renderAdminUserPredictions() {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid] || { teamA: '', teamB: '', a: '', b: '' };
             const r = DB.results.knockout[mid] || {};
-            const realTeamA = r.teamA || "Por Definir";
-            const realTeamB = r.teamB || "Por Definir";
+            const teamA = r.teamA || "Por Definir";
+            const teamB = r.teamB || "Por Definir";
+            const codeA = getTeamCode(teamA);
+            const codeB = getTeamCode(teamB);
             const official = r.finished && hasOfficialScore(r)
                 ? `<span class="text-[10px] text-gray-400 font-normal ml-2">Oficial: ${r.a} - ${r.b}</span>` : '';
             
             html += `
-            <div class="match-card p-4 flex flex-col gap-3">
-                <div class="w-full flex flex-col sm:flex-row justify-between items-center mb-1 pb-2 border-b border-white/5 gap-2">
-                    <span class="text-[10px] sm:text-xs text-brand-goldLight font-semibold tracking-wide uppercase">
-                        Real: ${realTeamA} vs ${realTeamB}
-                        ${official}
+            <div class="match-card flex flex-col p-4 sm:p-5">
+                <div class="w-full flex flex-wrap justify-between items-center mb-3 pb-2 border-b border-white/5 gap-2">
+                    <span class="text-[10px] sm:text-xs text-gray-400 font-semibold tracking-wide uppercase">
+                        Partido ${i}
                     </span>
+                    ${official}
                 </div>
-                <div class="flex items-center gap-2">
-                    <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
-                    <span class="vs-divider flex-shrink-0">VS</span>
-                    <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
-                </div>
-                <div class="flex items-center justify-center gap-2 mt-2">
-                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.a)}"/>
-                    <span class="text-gray-600 font-bold">:</span>
-                    <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.b)}"/>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="fi fi-${codeA} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${teamA}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}"/>
+                        <span class="vs-divider px-0.5">VS</span>
+                        <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}"/>
+                    </div>
+                    <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="fi fi-${codeB} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${teamB}</span>
+                    </div>
                 </div>
             </div>`;
         }
@@ -2628,14 +2641,7 @@ function renderAdminUserPredictions() {
     const champSel = container.querySelector('select[data-apred="champion"]');
     if (champSel) champSel.value = pred.champion || '';
     ROUNDS_CONFIG.forEach(round => {
-        for (let i = 1; i <= round.matches; i++) {
-            const mid = `ko_${round.key}_${i}`;
-            const p = pred.knockout[mid] || {};
-            const selA = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamA"]`);
-            const selB = container.querySelector(`select[data-apred="ko"][data-match="${mid}"][data-side="teamB"]`);
-            if (selA && p) selA.value = p.teamA || '';
-            if (selB && p) selB.value = p.teamB || '';
-        }
+        // Nothing to do here for knockout matches anymore as they don't have select elements
     });
 }
 
