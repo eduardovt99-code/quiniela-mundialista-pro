@@ -1695,9 +1695,10 @@ async function syncOfficialResultsFromFeed({ force = false, silent = false } = {
                 }
                 
                 
-                if (apiM.score?.ft?.length >= 2) {
-                    const a = parseInt(apiM.score.ft[0], 10);
-                    const b = parseInt(apiM.score.ft[1], 10);
+                const scoreArr = (apiM.score?.et?.length >= 2) ? apiM.score.et : apiM.score?.ft;
+                if (scoreArr?.length >= 2) {
+                    const a = parseInt(scoreArr[0], 10);
+                    const b = parseInt(scoreArr[1], 10);
                     if (res.a !== a || res.b !== b || !res.finished) {
                         res.a = a; res.b = b;
                         res.finished = true;
@@ -2554,15 +2555,27 @@ function renderAdminUserPredictions() {
             const official = res.finished && hasOfficialScore(res)
                 ? `<span class="text-[10px] text-gray-400">Oficial: ${res.a} - ${res.b}</span>` : '';
             html += `
-            <div class="match-card p-4">
-                <div class="flex items-center justify-between gap-2 mb-3 text-xs text-gray-400">
-                    <span class="truncate">${match.teamA} vs ${match.teamB}</span>
+            <div class="match-card flex flex-col p-4 sm:p-5">
+                <div class="w-full flex flex-wrap justify-between items-center mb-3 pb-2 border-b border-white/5 gap-2">
+                    <span class="text-[10px] sm:text-xs text-gray-400 font-semibold tracking-wide uppercase">
+                        Partido ${match.id.replace('g', '')}
+                    </span>
                     ${official}
                 </div>
-                <div class="flex items-center justify-center gap-2">
-                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}"/>
-                    <span class="vs-divider">VS</span>
-                    <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}"/>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex flex-col sm:flex-row items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="fi fi-${match.codeA} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-left">${match.teamA}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="a" class="score-input" min="0" placeholder="–" value="${predVal(p.a)}"/>
+                        <span class="vs-divider px-0.5">VS</span>
+                        <input type="number" data-apred="g" data-user="${attrUser}" data-match="${match.id}" data-side="b" class="score-input" min="0" placeholder="–" value="${predVal(p.b)}"/>
+                    </div>
+                    <div class="flex flex-col sm:flex-row-reverse items-center sm:gap-2.5 gap-1 w-1/4 sm:w-2/5 min-w-0">
+                        <span class="fi fi-${match.codeB} text-3xl drop-shadow-md flex-shrink-0 rounded-sm"></span>
+                        <span class="font-display font-semibold text-xs sm:text-base text-gray-100 truncate max-w-full text-center sm:text-right">${match.teamB}</span>
+                    </div>
                 </div>
             </div>`;
         });
@@ -2580,14 +2593,26 @@ function renderAdminUserPredictions() {
         for (let i = 1; i <= round.matches; i++) {
             const mid = `ko_${round.key}_${i}`;
             const p = pred.knockout[mid] || { teamA: '', teamB: '', a: '', b: '' };
+            const r = DB.results.knockout[mid] || {};
+            const realTeamA = r.teamA || "Por Definir";
+            const realTeamB = r.teamB || "Por Definir";
+            const official = r.finished && hasOfficialScore(r)
+                ? `<span class="text-[10px] text-gray-400 font-normal ml-2">Oficial: ${r.a} - ${r.b}</span>` : '';
+            
             html += `
             <div class="match-card p-4 flex flex-col gap-3">
+                <div class="w-full flex flex-col sm:flex-row justify-between items-center mb-1 pb-2 border-b border-white/5 gap-2">
+                    <span class="text-[10px] sm:text-xs text-brand-goldLight font-semibold tracking-wide uppercase">
+                        Real: ${realTeamA} vs ${realTeamB}
+                        ${official}
+                    </span>
+                </div>
                 <div class="flex items-center gap-2">
                     <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamA" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
                     <span class="vs-divider flex-shrink-0">VS</span>
                     <select data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="teamB" class="team-select flex-1 min-w-0 p-2 text-center text-xs">${teamOptions}</select>
                 </div>
-                <div class="flex items-center justify-center gap-2">
+                <div class="flex items-center justify-center gap-2 mt-2">
                     <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="a" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.a)}"/>
                     <span class="text-gray-600 font-bold">:</span>
                     <input type="number" data-apred="ko" data-user="${attrUser}" data-match="${mid}" data-side="b" class="score-input !w-11 !h-11" min="0" placeholder="–" value="${predVal(p.b)}"/>
